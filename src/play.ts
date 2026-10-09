@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { houseButton, quietButton, guide } from './kit';
+import { backButton, houseButton, quietButton, guide } from './kit';
 import { boop, speak, speakHover, speechSettled, setQuiet, isQuiet, cancelSpeech } from './speak';
 import {
   placeHud,
   setBackdrop,
+  setHud,
   setClickables,
   setGuides,
   setBopTap,
@@ -56,6 +57,7 @@ let chrome: Clickable[] = [];
 let extras: Clickable[] = [];
 let quietMesh: THREE.Mesh | null = null;
 let houseMesh: THREE.Mesh | null = null;
+let backMesh: THREE.Mesh | null = null;
 const HUD_SIZE = 0.86;
 const HUD_Z = 0.9;
 
@@ -208,13 +210,18 @@ export type Choice = {
   hear?: () => void;
 };
 
-export function openPlace(where: PlaceName, home: (() => void) | null, opts?: { chrome?: boolean }): number {
+export function openPlace(
+  where: PlaceName,
+  home: (() => void) | null,
+  opts?: { chrome?: boolean; back?: (() => void) | null },
+): number {
   interrupt();
   clearGroup(stage);
   chrome = [];
   extras = [];
   quietMesh = null;
   houseMesh = null;
+  backMesh = null;
   const spec = PLACES[where];
   placeNow = where;
   setBackdrop(spec.bg);
@@ -229,6 +236,7 @@ export function openPlace(where: PlaceName, home: (() => void) | null, opts?: { 
   stage.add(nim, bop);
   setGuides([nim, bop], replay);
   if (opts?.chrome === false) {
+    setHud([]);
     setClickables([]);
     return tokenN;
   }
@@ -246,16 +254,30 @@ export function openPlace(where: PlaceName, home: (() => void) | null, opts?: { 
       hover: 'Home',
       click: () => home(),
     });
+    if (opts?.back) {
+      const back = backButton();
+      back.name = 'door-back';
+      backMesh = back;
+      stage.add(back);
+      const goBack = opts.back;
+      buttons.push({
+        root: back,
+        hover: 'Back',
+        click: () => goBack(),
+      });
+    }
   }
   chrome = buttons;
   layoutHud();
+  setHud(chrome);
   setClickables(chrome);
   return tokenN;
 }
 
 function layoutHud(): void {
   if (quietMesh) placeHud(quietMesh, 'right', HUD_Z, HUD_SIZE, HUD_SIZE);
-  if (houseMesh) placeHud(houseMesh, 'left', HUD_Z, HUD_SIZE, HUD_SIZE);
+  if (houseMesh) placeHud(houseMesh, 'left', HUD_Z, HUD_SIZE, HUD_SIZE, 16, 0);
+  if (backMesh) placeHud(backMesh, 'left', HUD_Z, HUD_SIZE, HUD_SIZE, 16, 1);
 }
 
 export function bind(extra: Clickable[]): void {

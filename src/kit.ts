@@ -239,6 +239,31 @@ export function stone(label: string | number, size = 1.7): THREE.Mesh {
   return mesh;
 }
 
+export function backButton(): THREE.Mesh {
+  const { canvas, g } = ctx2d(256, 256);
+  g.fillStyle = CREAM;
+  g.beginPath();
+  g.arc(128, 128, 112, 0, Math.PI * 2);
+  g.fill();
+  g.lineWidth = 12;
+  g.strokeStyle = INK;
+  g.stroke();
+  g.fillStyle = INK;
+  g.beginPath();
+  g.moveTo(52, 128);
+  g.lineTo(124, 70);
+  g.lineTo(124, 104);
+  g.lineTo(204, 104);
+  g.lineTo(204, 152);
+  g.lineTo(124, 152);
+  g.lineTo(124, 186);
+  g.closePath();
+  g.fill();
+  const mesh = plane(canvasTexture(canvas), 0.86, 0.86, 8);
+  mesh.userData.disposeMap = true;
+  return mesh;
+}
+
 export function houseButton(): THREE.Mesh {
   const { canvas, g } = ctx2d(256, 256);
   g.fillStyle = CREAM;

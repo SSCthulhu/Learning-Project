@@ -35,6 +35,7 @@ export type Clickable = {
 };
 
 let clickables: Clickable[] = [];
+let hudClickables: Clickable[] = [];
 let hoverRoot: THREE.Object3D | null = null;
 let guideRoots: THREE.Object3D[] = [];
 let onGuide: (() => void) | null = null;
@@ -121,11 +122,18 @@ export function setBackdrop(key: string): void {
   backdropMat.needsUpdate = true;
 }
 
+function listed(root: THREE.Object3D): boolean {
+  return clickables.some((item) => item.root === root) || hudClickables.some((item) => item.root === root);
+}
+
 export function setClickables(list: Clickable[]): void {
   clickables = list;
-  if (hoverRoot && !list.some((c) => c.root === hoverRoot)) {
-    paintHover(null);
-  }
+  if (hoverRoot && !listed(hoverRoot)) paintHover(null);
+}
+
+export function setHud(list: Clickable[]): void {
+  hudClickables = list;
+  if (hoverRoot && !listed(hoverRoot)) paintHover(null);
 }
 
 export function setHoverTalk(fn: ((text: string) => void) | null): void {
@@ -155,15 +163,18 @@ export function placeHud(
   worldW: number,
   worldH: number,
   marginPx = 16,
+  slot = 0,
 ): void {
   const vis = visibleAt(z);
   const vw = Math.max(1, window.innerWidth);
   const vh = Math.max(1, window.innerHeight);
   const su = worldW / vis.w;
   const sv = worldH / vis.h;
+  const gap = 10 / vw;
+  const step = su + gap;
   const mu = marginPx / vw;
   const mv = marginPx / vh;
-  const u = side === 'left' ? mu + su / 2 : 1 - mu - su / 2;
+  const u = side === 'left' ? mu + su / 2 + slot * step : 1 - mu - su / 2 - slot * step;
   const v = mv + sv / 2;
   obj.position.set((u - 0.5) * vis.w, (0.5 - v) * vis.h, z);
 }
@@ -219,7 +230,7 @@ function paintHover(root: THREE.Object3D | null): void {
     lastHoverText = null;
     return;
   }
-  const text = clickables.find((item) => item.root === root)?.hover;
+  const text = [...hudClickables, ...clickables].find((item) => item.root === root)?.hover;
   if (!text || text === lastHoverText) return;
   hoverTimer = window.setTimeout(() => {
     if (hoverRoot !== root) return;
@@ -269,14 +280,19 @@ function pick(list: THREE.Object3D[]): THREE.Object3D | null {
 
 function onMove(event: PointerEvent): void {
   ndc(event);
-  const roots = clickables.map((c) => c.root);
-  const hit = pick(roots);
+  const hudHit = pick(hudClickables.map((item) => item.root));
+  const hit = hudHit ?? pick(clickables.map((item) => item.root));
   if (hit !== hoverRoot) paintHover(hit);
 }
 
 function onDown(event: PointerEvent): void {
   if (event.button !== 0) return;
   ndc(event);
+  const hudHit = pick(hudClickables.map((item) => item.root));
+  if (hudHit) {
+    hudClickables.find((item) => item.root === hudHit)?.click();
+    return;
+  }
   const roots = clickables.map((c) => c.root);
   const hit = pick(roots);
   if (hit) {

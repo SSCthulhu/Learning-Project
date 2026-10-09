@@ -15,12 +15,12 @@ function goHub(): void {
 }
 
 function goQuest(quest: QuestDef): void {
-  openPlace(quest.place, goHub);
+  openPlace(quest.place, goHub, { back: goHub });
   bind(lobbySigns(quest, (game) => startGame(quest, game)));
 }
 
 function startGame(quest: QuestDef, game: GameDef): void {
-  const token = openPlace(quest.place, () => goQuest(quest));
+  const token = openPlace(quest.place, goHub, { back: () => goQuest(quest) });
   void game.play(token).then((result) => {
     if (result === 'done' && token === currentToken()) goQuest(quest);
   });
