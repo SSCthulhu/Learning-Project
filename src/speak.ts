@@ -35,7 +35,9 @@ export function isQuiet(): boolean {
 export function setQuiet(next: boolean): void {
   quiet = next;
   speakToken += 1;
+  mainLive = false;
   window.speechSynthesis?.cancel();
+  releaseSpoken();
   fadeBed(next ? 0.0001 : 1);
 }
 
@@ -79,10 +81,40 @@ export function soundOf(letter: string): string {
   return SOUND[letter.toLowerCase()] ?? letter.toLowerCase();
 }
 
+let spoken: Promise<void> = Promise.resolve();
+let releaseSpoken: () => void = () => {};
+let chromeKeepAlive = 0;
+
+function armSpeech(): void {
+  releaseSpoken();
+  spoken = new Promise<void>((resolve) => {
+    releaseSpoken = resolve;
+  });
+}
+
+export function speechSettled(): Promise<void> {
+  return spoken;
+}
+
+function speechParts(line: string): string[] {
+  const bits = line.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [line];
+  const parts = bits.map((bit) => bit.trim()).filter((bit) => bit.length > 0);
+  return parts.length > 0 ? parts : [line];
+}
+
+function keepSpeechAlive(): void {
+  if (chromeKeepAlive) return;
+  chromeKeepAlive = window.setInterval(() => {
+    const synth = window.speechSynthesis;
+    if (synth?.speaking) synth.resume();
+  }, 4000);
+}
+
 export function cancelSpeech(): void {
   speakToken += 1;
   mainLive = false;
   window.speechSynthesis?.cancel();
+  releaseSpoken();
 }
 
 export function speakHover(line: string): void {
@@ -105,37 +137,59 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
   const synth = window.speechSynthesis;
   const token = ++speakToken;
   window.speechSynthesis?.cancel();
+  armSpeech();
+  keepSpeechAlive();
+  const finish = () => {
+    if (token !== speakToken) return;
+    mainLive = false;
+    releaseSpoken();
+    after?.();
+  };
   if (!synth) {
     mainLive = false;
+    releaseSpoken();
     if (token === speakToken) after?.();
     return;
   }
   if (quiet && !force) {
     mainLive = false;
+    releaseSpoken();
     return;
   }
   mainLive = true;
-  window.setTimeout(() => {
+  said.push(line);
+  (window as unknown as { __said?: string[] }).__said = said;
+  const parts = speechParts(line);
+  const speakPart = (index: number) => {
     if (token !== speakToken) return;
-    const utter = new SpeechSynthesisUtterance(line);
+    if (index >= parts.length) {
+      finish();
+      return;
+    }
+    const text = parts[index];
+    const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'en-US';
     utter.rate = rate;
     utter.pitch = 1.05;
     utter.volume = 1;
     const voice = pickVoice();
     if (voice) utter.voice = voice;
-    const done = () => {
-      if (token === speakToken) {
-        mainLive = false;
-        after?.();
-      }
+    let moved = false;
+    const words = text.trim().split(/\s+/).filter((bit) => bit.length > 0).length;
+    const capMs = Math.max(4500, words * 1200 + 1600);
+    let capId = 0;
+    const advance = () => {
+      if (moved || token !== speakToken) return;
+      moved = true;
+      window.clearTimeout(capId);
+      window.setTimeout(() => speakPart(index + 1), 80);
     };
-    utter.onend = done;
-    utter.onerror = done;
-    said.push(line);
-    (window as unknown as { __said?: string[] }).__said = said;
+    capId = window.setTimeout(advance, capMs);
+    utter.onend = advance;
+    utter.onerror = advance;
     synth.speak(utter);
-  }, 40);
+  };
+  window.setTimeout(() => speakPart(0), 100);
 }
 
 function audioContext(): AudioContext | null {

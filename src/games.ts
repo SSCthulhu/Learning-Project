@@ -62,7 +62,7 @@ export const QUESTS: QuestDef[] = [
     games: [
       { id: 'star-baskets', name: 'Count', play: playCount },
       { id: 'constellations', name: 'Match', play: playSets },
-      { id: 'more-fewer', name: 'More', play: playMore },
+      { id: 'more-fewer', name: 'More than', play: playMore },
       { id: 'number-path', name: 'Path', play: playPath },
     ],
   },
@@ -161,13 +161,11 @@ function paintGameIcon(g: CanvasRenderingContext2D, id: GameId, face: FaceBox): 
   if (id === 'letter-hunt') {
     inkText(g, 'A', cx, cy, face.h * 0.92);
   } else if (id === 'sound-shell') {
-    stampBit(g, 'moon', face.x + face.w * 0.3, cy, face.h * 0.95);
-    inkText(g, 'm', face.x + face.w * 0.72, cy + face.h * 0.06, face.h * 0.62);
+    drawSpeakerIcon(g, cx, cy, face.h * 0.34);
   } else if (id === 'case-match') {
     inkText(g, 'Aa', cx, cy, face.h * 0.78);
   } else if (id === 'word-bridge') {
-    stampBit(g, 'cat', cx, cy - face.h * 0.12, face.h * 0.72);
-    inkText(g, 'c  a  t', cx, face.y + face.h * 0.86, face.h * 0.32);
+    drawSpellSlots(g, face);
   } else if (id === 'word-banners') {
     drawBellIcon(g, cx, cy, face.h * 0.42);
   } else if (id === 'picture-match') {
@@ -231,6 +229,48 @@ function stampBit(g: CanvasRenderingContext2D, key: string, x: number, y: number
   const dw = image.width * scale;
   const dh = image.height * scale;
   g.drawImage(image, x - dw / 2, y - dh / 2, dw, dh);
+}
+
+function drawSpeakerIcon(g: CanvasRenderingContext2D, x: number, y: number, s: number): void {
+  g.fillStyle = INK;
+  g.beginPath();
+  g.moveTo(x - s * 1.2, y - s * 0.38);
+  g.lineTo(x - s * 0.45, y - s * 0.38);
+  g.lineTo(x + s * 0.2, y - s * 1.05);
+  g.lineTo(x + s * 0.2, y + s * 1.05);
+  g.lineTo(x - s * 0.45, y + s * 0.38);
+  g.lineTo(x - s * 1.2, y + s * 0.38);
+  g.closePath();
+  g.fill();
+  g.strokeStyle = INK;
+  g.lineCap = 'round';
+  g.lineWidth = Math.max(7, s * 0.16);
+  g.beginPath();
+  g.arc(x + s * 0.45, y, s * 0.62, -0.9, 0.9);
+  g.stroke();
+  g.beginPath();
+  g.arc(x + s * 0.45, y, s * 1.15, -0.75, 0.75);
+  g.stroke();
+}
+
+function drawSpellSlots(g: CanvasRenderingContext2D, face: FaceBox): void {
+  const count = 3;
+  const gap = face.w * 0.045;
+  const w = face.w * 0.22;
+  const h = face.h * 0.62;
+  const total = count * w + (count - 1) * gap;
+  let x = face.x + (face.w - total) / 2;
+  const y = face.y + (face.h - h) / 2;
+  g.lineWidth = Math.max(6, face.h * 0.045);
+  g.strokeStyle = INK;
+  for (let i = 0; i < count; i++) {
+    g.fillStyle = '#fff6e4';
+    g.beginPath();
+    g.roundRect(x, y, w, h, w * 0.14);
+    g.fill();
+    g.stroke();
+    x += w + gap;
+  }
 }
 
 function drawBellIcon(g: CanvasRenderingContext2D, x: number, y: number, r: number): void {

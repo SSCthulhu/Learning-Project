@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { houseButton, quietButton, guide } from './kit';
-import { boop, speak, speakHover, setQuiet, isQuiet, cancelSpeech } from './speak';
+import { boop, speak, speakHover, speechSettled, setQuiet, isQuiet, cancelSpeech } from './speak';
 import {
   placeHud,
   setBackdrop,
@@ -134,12 +134,35 @@ let waits: ((ok: boolean) => void)[] = [];
 
 export function pause(token: number, ms: number): Promise<boolean> {
   return new Promise((resolve) => {
+    let settled = false;
     const finishWait = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
       waits = waits.filter((wait) => wait !== finishWait);
       resolve(ok);
     };
     waits.push(finishWait);
-    const id = window.setTimeout(() => finishWait(token === tokenN), ms);
+    const id = window.setTimeout(() => {
+      if (settled) return;
+      if (ms < 1200) {
+        finishWait(token === tokenN);
+        return;
+      }
+      let moved = false;
+      let backup = 0;
+      const proceed = () => {
+        if (moved || settled) return;
+        moved = true;
+        window.clearTimeout(backup);
+        const tail = window.setTimeout(() => finishWait(token === tokenN), 320);
+        timers.push(tail);
+      };
+      // Sample the voice that is speaking now, including a replay started during the wait.
+      const voice = speechSettled();
+      backup = window.setTimeout(proceed, Math.max(ms, 8000));
+      timers.push(backup);
+      void voice.then(proceed);
+    }, ms);
     timers.push(id);
   });
 }

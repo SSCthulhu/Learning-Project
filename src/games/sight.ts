@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { picture, sentenceBanner, wordCard } from '../kit';
-import { addActor, bind, currentToken, drop, holdMs, remind, say, showProgress } from '../play';
+import { addActor, bind, currentToken, drop, holdMs, pause, remind, say, showProgress } from '../play';
 import { canvasTexture, celebrate, encourage, place, plane, textures, wobble, type Clickable } from '../world';
 import { cap, finish, shuffle, stage } from './common';
 
@@ -35,7 +35,7 @@ function wait(token: number, ms: number): Promise<boolean> {
 async function talk(token: number, text: string, opts?: { speech?: string }): Promise<boolean> {
   if (token !== currentToken()) return false;
   say(text, opts);
-  return wait(token, holdMs(opts?.speech ?? text));
+  return pause(token, holdMs(opts?.speech ?? text));
 }
 
 function tint(root: THREE.Object3D, hex: number): void {
@@ -232,7 +232,7 @@ async function choose(
       wobble(item.mesh);
       encourage();
       say(item.tip);
-      await wait(token, holdMs(item.tip));
+      await pause(token, holdMs(item.tip));
       if (closed || won || token !== currentToken()) return;
       tint(item.mesh, 0xffffff);
       cooling = false;
@@ -258,7 +258,7 @@ async function choose(
         }
       }
       say(praise);
-      await wait(token, holdMs(praise));
+      await pause(token, holdMs(praise));
       for (const entry of items) {
         if (entry.mesh.userData.stay || !entry.mesh.parent) continue;
         drop(entry.mesh);

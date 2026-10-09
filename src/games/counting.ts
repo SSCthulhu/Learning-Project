@@ -609,7 +609,7 @@ export async function playMore(token: number): Promise<'done' | 'leave'> {
     const demo = pairClusters('apple', [5, 2], 0.5);
     const more = demo.find((g) => g.name === 'set-5') ?? demo[0];
     const glow = glowAt(more.position.x / WORLD_W + 0.5, 0.5, 3.15, 3.25, 0.58);
-    const teach = 'Count both piles. This pile has more.';
+    const teach = 'Count both piles. This pile is more than the other.';
     if (!(await teachBeat(token, teach, [glow, ...demo]))) return false;
     for (let i = 0; i < rounds.length; i++) {
       const round = rounds[i];
@@ -617,7 +617,6 @@ export async function playMore(token: number): Promise<'done' | 'leave'> {
       const wantLeft = round.fewer ? round.a < round.b : round.a > round.b;
       const bigger = numberWord(Math.max(round.a, round.b));
       const smaller = numberWord(Math.min(round.a, round.b));
-      const word = BIT_WORD[round.bit];
       const items: Choice[] = [
         {
           mesh: cards[0],
@@ -632,10 +631,12 @@ export async function playMore(token: number): Promise<'done' | 'leave'> {
           hear: () => popBits(cards[1]),
         },
       ];
-      const askLine = round.fewer ? `Tap the group with fewer ${word}.` : `Tap the group with more ${word}.`;
+      const askLine = round.fewer
+        ? 'Tap the group that is less than the other.'
+        : 'Tap the group that is more than the other.';
       const caption = i === 0 ? `Your turn. ${askLine}` : askLine;
       const praise = round.fewer
-        ? `Yes. ${cap(smaller)} is fewer than ${bigger}.`
+        ? `Yes. ${cap(smaller)} is less than ${bigger}.`
         : `Yes. ${cap(bigger)} is more than ${smaller}.`;
       const ok = await ask(token, caption, items, praise, [], pace(i, rounds.length));
       if (!ok) return false;
