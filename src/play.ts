@@ -30,7 +30,7 @@ export type PlaceName = 'hub' | 'grove' | 'market' | 'song' | 'citadel';
 type Spot = { u: number; v: number };
 
 const PLACES: Record<PlaceName, { bg: string; nim: Spot; bop: Spot }> = {
-  hub: { bg: 'village', nim: { u: 0.3, v: 0.86 }, bop: { u: 0.56, v: 0.885 } },
+  hub: { bg: 'village', nim: { u: 0.4, v: 0.86 }, bop: { u: 0.62, v: 0.885 } },
   grove: { bg: 'grove', nim: { u: 0.175, v: 0.86 }, bop: { u: 0.83, v: 0.86 } },
   market: { bg: 'market', nim: { u: 0.21, v: 0.88 }, bop: { u: 0.79, v: 0.88 } },
   song: { bg: 'songkeep', nim: { u: 0.18, v: 0.86 }, bop: { u: 0.82, v: 0.86 } },

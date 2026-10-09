@@ -46,13 +46,68 @@ export function anchorWord(letter: string): string {
   return ANCHOR[letter.toLowerCase()] ?? letter;
 }
 
+const NIM_PITCH = 1.28;
+
+function voiceScore(voice: SpeechSynthesisVoice): number {
+  const name = voice.name.toLowerCase();
+  if (!/^en(-|_)/i.test(voice.lang)) return -1;
+  let score = 1;
+  if (/child|kid|junior/.test(name)) score += 80;
+  if (/samantha|karen|moira|serena|fiona|kathy|aria|jenny/.test(name)) score += 50;
+  if (/google uk english female|google us english/.test(name)) score += 46;
+  if (/natural|neural|premium|enhanced/.test(name)) score += 36;
+  if (/female|woman/.test(name)) score += 12;
+  if (/en-us/i.test(voice.lang)) score += 8;
+  if (/en-gb/i.test(voice.lang)) score += 6;
+  if (voice.localService) score += 3;
+  if (/espeak|compact|david|fred|albert|ralph|bad news|bahh|bells|boing|whisper|zarvox|trinoids|deranged/.test(name)) score -= 60;
+  return score;
+}
+
 function pickVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis?.getVoices() ?? [];
+  let best: SpeechSynthesisVoice | null = null;
+  let bestScore = 0;
+  for (const voice of voices) {
+    const score = voiceScore(voice);
+    if (score > bestScore) {
+      best = voice;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+function voicesReady(): Promise<void> {
   const synth = window.speechSynthesis;
-  if (!synth) return null;
-  const voices = synth.getVoices();
-  const english = voices.filter((voice) => /^en(-|_)/i.test(voice.lang));
-  const named = english.find((voice) => /samantha|google us english|aria|jenny|natural|female/i.test(voice.name));
-  return named ?? english.find((voice) => /en-US/i.test(voice.lang)) ?? english[0] ?? null;
+  if (!synth || synth.getVoices().length > 0) return Promise.resolve();
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = () => {
+      if (settled || synth.getVoices().length === 0) return;
+      settled = true;
+      window.clearTimeout(timer);
+      synth.removeEventListener('voiceschanged', done);
+      resolve();
+    };
+    const timer = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      synth.removeEventListener('voiceschanged', done);
+      resolve();
+    }, 450);
+    synth.addEventListener('voiceschanged', done);
+    synth.getVoices();
+  });
+}
+
+function styleNim(utter: SpeechSynthesisUtterance, rate: number): void {
+  utter.lang = 'en-US';
+  utter.rate = rate;
+  utter.pitch = NIM_PITCH;
+  utter.volume = 1;
+  const voice = pickVoice();
+  if (voice) utter.voice = voice;
 }
 
 const SOUND: Record<string, string> = {
@@ -131,12 +186,7 @@ export function speakHover(line: string): void {
   if (!synth || quiet || mainLive) return;
   synth.cancel();
   const utter = new SpeechSynthesisUtterance(line);
-  utter.lang = 'en-US';
-  utter.rate = 0.92;
-  utter.pitch = 1.05;
-  utter.volume = 1;
-  const voice = pickVoice();
-  if (voice) utter.voice = voice;
+  styleNim(utter, 0.92);
   said.push(line);
   (window as unknown as { __said?: string[] }).__said = said;
   synth.speak(utter);
@@ -179,12 +229,7 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     }
     const text = parts[index];
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'en-US';
-    utter.rate = rate;
-    utter.pitch = 1.05;
-    utter.volume = 1;
-    const voice = pickVoice();
-    if (voice) utter.voice = voice;
+    styleNim(utter, rate);
     let moved = false;
     const words = text.trim().split(/\s+/).filter((bit) => bit.length > 0).length;
     const capMs = Math.max(4500, words * 1200 + 1600);
@@ -203,7 +248,10 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     };
     synth.speak(utter);
   };
-  window.setTimeout(() => speakPart(0), 100);
+  void voicesReady().then(() => {
+    if (token !== speakToken) return;
+    window.setTimeout(() => speakPart(0), 60);
+  });
 }
 
 function audioContext(): AudioContext | null {

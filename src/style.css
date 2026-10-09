@@ -56,11 +56,11 @@ html, body {
 #hear:hover { background: #ffe7a8; }
 
 #prompt.talking #hear {
-  animation: nim-talk 0.55s ease-in-out infinite;
+  animation: nim-talk 0.9s ease-in-out infinite;
 }
 
 @keyframes nim-talk {
-  50% { transform: scale(1.08); background: #ffe7a8; }
+  50% { transform: scale(1.03); background: #ffe7a8; }
 }
 
 #caption {

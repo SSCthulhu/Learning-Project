@@ -418,7 +418,7 @@ export function start(): void {
         if (shake > 0) root.rotation.z = Math.sin(shake * 46) * 0.14 * shake;
       } else {
         y += Math.sin(clock * 1.5) * 0.045;
-        const talk = talking ? 1 + Math.sin(clock * 16) * 0.03 : 1;
+        const talk = talking ? 1 + Math.sin(clock * 8) * 0.008 : 1;
         root.scale.setScalar(talk);
         root.rotation.z = Math.sin(clock * 0.7) * 0.02;
       }
