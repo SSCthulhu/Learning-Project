@@ -37,6 +37,7 @@ export function setQuiet(next: boolean): void {
   quiet = next;
   speakToken += 1;
   mainLive = false;
+  stopClip();
   window.speechSynthesis?.cancel();
   releaseSpoken();
   fadeBed(next ? 0.0001 : 1);
@@ -177,19 +178,28 @@ function keepSpeechAlive(): void {
 export function cancelSpeech(): void {
   speakToken += 1;
   mainLive = false;
+  stopClip();
   window.speechSynthesis?.cancel();
   releaseSpoken();
 }
 
 export function speakHover(line: string): void {
-  const synth = window.speechSynthesis;
-  if (!synth || quiet || mainLive) return;
-  synth.cancel();
-  const utter = new SpeechSynthesisUtterance(line);
-  styleNim(utter, 0.92);
-  said.push(line);
-  (window as unknown as { __said?: string[] }).__said = said;
-  synth.speak(utter);
+  if (quiet || mainLive) return;
+  stopClip();
+  window.speechSynthesis?.cancel();
+  void voiceReady.then(() => {
+    if (quiet || mainLive) return;
+    void playRecording(line).then((played) => {
+      if (played || quiet || mainLive) return;
+      const synth = window.speechSynthesis;
+      if (!synth) return;
+      const utter = new SpeechSynthesisUtterance(line);
+      styleNim(utter, 0.92);
+      said.push(line);
+      (window as unknown as { __said?: string[] }).__said = said;
+      synth.speak(utter);
+    });
+  });
 }
 
 export function speak(line: string, force = false, after?: () => void, rate = 0.9): void {
@@ -197,6 +207,7 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
   const synth = window.speechSynthesis;
   const token = ++speakToken;
   liveLine = line;
+  stopClip();
   window.speechSynthesis?.cancel();
   armSpeech();
   keepSpeechAlive();
@@ -206,12 +217,6 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     releaseSpoken();
     after?.();
   };
-  if (!synth) {
-    mainLive = false;
-    releaseSpoken();
-    if (token === speakToken) after?.();
-    return;
-  }
   if (quiet && !force) {
     mainLive = false;
     releaseSpoken();
@@ -248,11 +253,79 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     };
     synth.speak(utter);
   };
-  void voicesReady().then(() => {
+  void voiceReady.then(() => voicesReady()).then(() => {
     if (token !== speakToken) return;
-    window.setTimeout(() => speakPart(0), 60);
+    void playRecording(line).then((played) => {
+      if (token !== speakToken) return;
+      if (played) {
+        finish();
+        return;
+      }
+      if (!synth) {
+        finish();
+        return;
+      }
+      window.setTimeout(() => speakPart(0), 60);
+    });
   });
 }
+
+const voiceFiles = new Map<string, string>();
+let voiceReady: Promise<void> = Promise.resolve();
+let clip: HTMLAudioElement | null = null;
+
+function loadVoiceIndex(): void {
+  const url = `${import.meta.env.BASE_URL}voice/index.json`;
+  let ready: () => void = () => {};
+  voiceReady = new Promise<void>((resolve) => {
+    ready = resolve;
+  });
+  const timer = window.setTimeout(ready, 1500);
+  void fetch(url)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data: Record<string, string> | null) => {
+      if (!data) return;
+      for (const [line, file] of Object.entries(data)) {
+        if (line && file) voiceFiles.set(line, file);
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      window.clearTimeout(timer);
+      ready();
+    });
+}
+
+function stopClip(): void {
+  if (!clip) return;
+  clip.onended = null;
+  clip.onerror = null;
+  clip.pause();
+  clip.removeAttribute('src');
+  clip.load();
+  clip = null;
+}
+
+function playRecording(line: string): Promise<boolean> {
+  const file = voiceFiles.get(line);
+  if (!file) return Promise.resolve(false);
+  const el = new Audio(`${import.meta.env.BASE_URL}voice/${file}`);
+  clip = el;
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      if (clip === el) clip = null;
+      resolve(ok);
+    };
+    el.onended = () => done(true);
+    el.onerror = () => done(false);
+    void el.play().catch(() => done(false));
+  });
+}
+
+loadVoiceIndex();
 
 function audioContext(): AudioContext | null {
   const Ctx = window.AudioContext;
