@@ -156,9 +156,9 @@ function landingMark(w: number, h: number): THREE.Mesh {
   return mesh;
 }
 
-function steppingStone(index: number): THREE.Mesh {
+function steppingStone(index: number, scale = 1): THREE.Mesh {
   const tex = textures.stone;
-  const w = 1.78;
+  const w = 1.78 * scale;
   const h = w * (493 / 899);
   const mesh = plane(tex, w, h, 3);
   const mat = mesh.material as THREE.MeshBasicMaterial;
@@ -168,16 +168,51 @@ function steppingStone(index: number): THREE.Mesh {
   return mesh;
 }
 
-function stoneSpots(count: number): [number, number][] {
-  // Wide enough that a 0.85-scale word card sits on its own stone.
-  const left = 0.36;
-  const right = 0.66;
+type TrailFit = {
+  spots: [number, number][];
+  stoneScale: number;
+  ringW: number;
+  ringH: number;
+  cardScale: number;
+};
+
+function stoneSpots(count: number, left: number, right: number, arc: number): [number, number][] {
   return Array.from({ length: count }, (_, i) => {
     const t = count === 1 ? 0.5 : i / (count - 1);
     const u = left + (right - left) * t;
-    const v = 0.718 + Math.sin(t * Math.PI) * 0.018 + (i % 2 === 0 ? 0 : 0.01);
+    const v = 0.74 - Math.sin(t * Math.PI) * arc;
     return [u, v] as [number, number];
   });
+}
+
+function trailFit(count: number): TrailFit {
+  // Nim's right side is about u 0.30 and Bop's left side is about u 0.65.
+  // Four full-size stones cannot fit in that gap, so that row is smaller.
+  if (count >= 4) {
+    return {
+      spots: stoneSpots(count, 0.34, 0.598, 0.016),
+      stoneScale: 0.66,
+      ringW: 1.2,
+      ringH: 0.7,
+      cardScale: 0.58,
+    };
+  }
+  if (count === 3) {
+    return {
+      spots: stoneSpots(count, 0.353, 0.584, 0.022),
+      stoneScale: 0.86,
+      ringW: 1.62,
+      ringH: 0.94,
+      cardScale: 0.72,
+    };
+  }
+  return {
+    spots: stoneSpots(count, 0.4, 0.56, 0.028),
+    stoneScale: 1,
+    ringW: 1.95,
+    ringH: 1.15,
+    cardScale: 0.85,
+  };
 }
 
 async function introWords(token: number, items: WordPick[]): Promise<boolean> {
@@ -468,7 +503,7 @@ export async function playMissing(token: number): Promise<'done' | 'leave'> {
 export async function playTrail(token: number): Promise<'done' | 'leave'> {
   const trails = [
     ['see', 'the', 'cat', 'go'],
-    ['I', 'like', 'you', 'and'],
+    ['I', 'like', 'you'],
     ['we', 'look'],
   ];
   const total = trails.reduce((sum, trail) => sum + trail.length, 0);
@@ -479,10 +514,11 @@ export async function playTrail(token: number): Promise<'done' | 'leave'> {
       let n = 0;
       let first = true;
       for (const trail of trails) {
-        const spots = stoneSpots(trail.length);
+        const fit = trailFit(trail.length);
+        const spots = fit.spots;
         const stones: THREE.Mesh[] = [];
         for (let i = 0; i < trail.length; i++) {
-          const stone = steppingStone(i);
+          const stone = steppingStone(i, fit.stoneScale);
           place(stone, spots[i][0], spots[i][1], 0.32);
           addActor(stone);
           stones.push(stone);
@@ -498,7 +534,7 @@ export async function playTrail(token: number): Promise<'done' | 'leave'> {
           );
           for (const item of items) addActor(item.mesh);
           const nextStone = stones[step];
-          const ring = landingMark(2.05, 1.22);
+          const ring = landingMark(fit.ringW, fit.ringH);
           ring.position.copy(nextStone.position);
           ring.position.z = nextStone.position.z + 0.2;
           ring.renderOrder = 6;
@@ -539,7 +575,8 @@ export async function playTrail(token: number): Promise<'done' | 'leave'> {
               item.mesh.userData.stay = true;
               item.mesh.name = `fill-${word}`;
               const stone = stones[step];
-              await slideTo(token, item.mesh, stone.position.x, stone.position.y + 0.14, stone.position.z + 0.14, 0.85);
+              const cardScale = fit.cardScale;
+              await slideTo(token, item.mesh, stone.position.x, stone.position.y + 0.14, stone.position.z + 0.14, cardScale);
               landed.push(item.mesh);
             },
           });
@@ -556,6 +593,6 @@ export async function playTrail(token: number): Promise<'done' | 'leave'> {
       }
       return true;
     },
-    'You followed the whole trail.',
+    'You read every word.',
   );
 }

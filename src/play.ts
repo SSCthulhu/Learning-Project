@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { backButton, houseButton, quietButton, guide } from './kit';
-import { boop, speak, speakHover, speechSettled, setQuiet, isQuiet, cancelSpeech } from './speak';
+import { speak, speakHover, speechSettled, setVoiceQuiet, setMusicQuiet, isVoiceQuiet, isMusicQuiet, cancelSpeech, onNimTalk } from './speak';
 import {
   placeHud,
   setBackdrop,
@@ -61,13 +61,16 @@ let backMesh: THREE.Mesh | null = null;
 const HUD_SIZE = 0.86;
 const HUD_Z = 0.9;
 
+onNimTalk((on) => {
+  setTalking(on);
+  caption.parentElement?.classList.toggle('talking', on);
+});
 setHoverTalk((text) => {
-  if (pending || lock) return;
+  if (pending || lock || isVoiceQuiet()) return;
   speakHover(text);
 });
 setBopTap(() => {
   giggle();
-  boop();
 });
 setEmptyTap(() => {
   if (line) replay();
@@ -89,30 +92,23 @@ export function say(text: string, opts?: { speech?: string; then?: () => void })
   tail = opts?.then;
   caption.textContent = shown;
   caption.parentElement?.classList.toggle('show', shown.length > 0);
-  if (isQuiet()) {
-    markTalking(false);
-    return;
-  }
-  markTalking(true);
+  if (isVoiceQuiet()) return;
   const after = tail;
   speak(line, false, () => {
-    markTalking(false);
     after?.();
   });
 }
 
 export function replay(): void {
-  if (!line || isQuiet()) return;
-  markTalking(true);
+  if (!line || isVoiceQuiet()) return;
   const after = tail;
   speak(line, true, () => {
-    markTalking(false);
     after?.();
   });
 }
 
 export function remind(text: string): void {
-  if (isQuiet()) return;
+  if (isVoiceQuiet()) return;
   if (!line) {
     say(text);
     return;
@@ -122,9 +118,7 @@ export function remind(text: string): void {
   const savedTail = tail;
   caption.textContent = text;
   caption.parentElement?.classList.toggle('show', true);
-  markTalking(true);
   speak(text, true, () => {
-    markTalking(false);
     shown = savedShown;
     line = savedLine;
     tail = savedTail;
@@ -241,10 +235,10 @@ export function openPlace(
     setClickables([]);
     return tokenN;
   }
-  const quiet = quietButton(isQuiet());
+  const quiet = quietButton(isMusicQuiet());
   quietMesh = quiet;
   stage.add(quiet);
-  const buttons: Clickable[] = [{ root: quiet, hover: isQuiet() ? 'Sound' : 'Quiet', click: toggleQuiet }];
+  const buttons: Clickable[] = [{ root: quiet, hover: isMusicQuiet() ? 'Sound' : 'Quiet', click: toggleMusic }];
   if (home) {
     const house = houseButton();
     house.name = 'door-home';
@@ -291,40 +285,38 @@ function plant(root: THREE.Object3D, spot: Spot): void {
   root.position.copy(p);
 }
 
-function markTalking(on: boolean): void {
-  setTalking(on);
-  caption.parentElement?.classList.toggle('talking', on);
-}
-
 function paintHear(): void {
   const hear = document.getElementById('hear');
   if (!hear) return;
-  hear.classList.toggle('muted', isQuiet());
-  hear.setAttribute('aria-pressed', isQuiet() ? 'true' : 'false');
-  hear.setAttribute('aria-label', isQuiet() ? 'Turn sound on' : 'Turn sound off');
+  hear.classList.toggle('muted', isVoiceQuiet());
+  hear.setAttribute('aria-pressed', isVoiceQuiet() ? 'true' : 'false');
+  hear.setAttribute('aria-label', isVoiceQuiet() ? 'Turn voice on' : 'Turn voice off');
 }
 
-export function toggleQuiet(): void {
-  setQuiet(!isQuiet());
-  paintHear();
+function paintMusic(): void {
   const button = chrome.find((item) => item.root === quietMesh);
-  if (button) button.hover = isQuiet() ? 'Sound' : 'Quiet';
-  if (isQuiet()) markTalking(false);
-  if (quietMesh) {
-    const next = quietButton(isQuiet());
-    const oldMat = quietMesh.material as THREE.MeshBasicMaterial;
-    const newMat = next.material as THREE.MeshBasicMaterial;
-    oldMat.map?.dispose();
-    oldMat.map = newMat.map;
-    oldMat.needsUpdate = true;
-    newMat.map = null;
-    next.geometry.dispose();
-    newMat.dispose();
-  }
-  if (!isQuiet() && line) {
-    markTalking(true);
-    speak(line, false, () => markTalking(false));
-  }
+  if (button) button.hover = isMusicQuiet() ? 'Sound' : 'Quiet';
+  if (!quietMesh) return;
+  const next = quietButton(isMusicQuiet());
+  const oldMat = quietMesh.material as THREE.MeshBasicMaterial;
+  const newMat = next.material as THREE.MeshBasicMaterial;
+  oldMat.map?.dispose();
+  oldMat.map = newMat.map;
+  oldMat.needsUpdate = true;
+  newMat.map = null;
+  next.geometry.dispose();
+  newMat.dispose();
+}
+
+export function toggleVoice(): void {
+  setVoiceQuiet(!isVoiceQuiet());
+  paintHear();
+  if (!isVoiceQuiet() && line) speak(line, false, () => {});
+}
+
+export function toggleMusic(): void {
+  setMusicQuiet(!isMusicQuiet());
+  paintMusic();
 }
 
 export function addActor(obj: THREE.Object3D): void {
