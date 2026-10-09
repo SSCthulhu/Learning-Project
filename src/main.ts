@@ -1,10 +1,12 @@
 import { findGame, hubZones, lobbySigns, QUESTS, type GameDef, type QuestDef } from './games';
 import * as THREE from 'three';
-import { bind, currentToken, openPlace, say, toggleVoice } from './play';
-import { unlockAudio } from './speak';
+import { bind, currentToken, openPlace, say, toggleMusic, toggleVoice } from './play';
+import { isMusicQuiet, musicHeard, unlockAudio } from './speak';
 import { asset, bindInput, camera, preload, scene, start } from './world';
 
-const boot = document.getElementById('boot') as HTMLButtonElement;
+const boot = document.getElementById('boot') as HTMLElement;
+const bootPlay = boot.querySelector('.boot-title') as HTMLButtonElement;
+const bootMusic = document.getElementById('boot-music') as HTMLButtonElement;
 let ready = false;
 let started = false;
 
@@ -49,8 +51,15 @@ async function bootUp(): Promise<void> {
   await Promise.all([face.load().then((loaded) => document.fonts.add(loaded)), preload()]);
   bindInput();
   start();
-  ready = true;
   openPlace('grove', null, { chrome: false, guides: false });
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+  ready = true;
+  boot.classList.add('ready');
+  unlockAudio();
+  paintSplashMusic();
+  window.setTimeout(paintSplashMusic, 280);
 }
 
 function waitFade(el: HTMLElement, ms: number): Promise<void> {
@@ -68,6 +77,23 @@ function waitFade(el: HTMLElement, ms: number): Promise<void> {
     el.addEventListener('transitionend', onEnd);
     window.setTimeout(finish, ms);
   });
+}
+
+function paintSplashMusic(): void {
+  const quiet = isMusicQuiet() || !musicHeard();
+  bootMusic.classList.toggle('muted', quiet);
+  bootMusic.setAttribute('aria-pressed', quiet ? 'true' : 'false');
+  bootMusic.setAttribute('aria-label', quiet ? 'Turn music on' : 'Turn music off');
+}
+
+function onSplashMusic(event: Event): void {
+  event.preventDefault();
+  event.stopPropagation();
+  const playing = musicHeard();
+  unlockAudio();
+  if (playing || isMusicQuiet()) toggleMusic();
+  paintSplashMusic();
+  window.setTimeout(paintSplashMusic, 280);
 }
 
 async function begin(): Promise<void> {
@@ -103,7 +129,11 @@ function project(prefix: string): { name: string; x: number; y: number }[] {
 
 window.starlace = { goto, project };
 void bootUp();
-boot.addEventListener('pointerdown', begin);
+bootPlay.addEventListener('pointerdown', (event) => {
+  event.stopPropagation();
+  void begin();
+});
+bootMusic.addEventListener('pointerdown', onSplashMusic);
 document.getElementById('hear')?.addEventListener('pointerdown', (event) => {
   event.preventDefault();
   event.stopPropagation();

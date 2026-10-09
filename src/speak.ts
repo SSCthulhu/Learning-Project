@@ -55,6 +55,10 @@ export function isMusicQuiet(): boolean {
   return musicQuiet;
 }
 
+export function musicHeard(): boolean {
+  return !!bedEl && !bedEl.paused;
+}
+
 export function setVoiceQuiet(next: boolean): void {
   voiceQuiet = next;
   if (!next) return;

@@ -19,20 +19,34 @@
       <p id="caption"></p>
     </div>
     <div id="progress"></div>
-    <button id="boot" type="button" aria-label="Starlace. Tap to play.">
+    <div id="boot">
       <div class="boot-fade">
         <div class="boot-logo">
-          <svg class="boot-star" viewBox="0 0 64 64" width="58" height="58" aria-hidden="true">
-            <path fill="#e7b34a" stroke="#fff6e4" stroke-width="4" stroke-linejoin="round" d="M32 4l6.6 16.4L56 22.2 41.2 33.4 46.2 52 32 42.2 17.8 52l5-18.6L8 22.2l17.4-1.8z" />
+          <svg class="boot-crest" viewBox="0 0 1100 420" aria-hidden="true">
+            <path fill="#e7b34a" d="M28 168l150-22v128L28 252l58-42z" />
+            <path fill="#c9842a" d="M28 168l58 42-58 42 36-42z" />
+            <path fill="#e7b34a" d="M1072 168l-150-22v128l150-22-58-42z" />
+            <path fill="#c9842a" d="M1072 168l-58 42 58 42-36-42z" />
+            <rect x="150" y="78" width="800" height="250" rx="46" fill="#fff6e4" stroke="#e7b34a" stroke-width="14" />
+            <rect x="176" y="104" width="748" height="198" rx="32" fill="none" stroke="#e7b34a" stroke-width="4" />
+            <path fill="#e7b34a" stroke="#fff6e4" stroke-width="6" stroke-linejoin="round" d="M550 18l14 34 38 4-28 26 8 38-32-18-32 18 8-38-28-26 38-4z" />
+            <path fill="#e7b34a" d="M250 118l6 14 16 2-12 10 4 16-14-8-14 8 4-16-12-10 16-2z" />
+            <path fill="#e7b34a" d="M850 118l6 14 16 2-12 10 4 16-14-8-14 8 4-16-12-10 16-2z" />
+            <circle cx="214" cy="286" r="7" fill="#e07a9a" />
+            <circle cx="886" cy="286" r="7" fill="#e07a9a" />
+            <path fill="none" stroke="#e7b34a" stroke-width="5" stroke-linecap="round" d="M230 318c18 16 28 16 46 0s28-16 46 0 28 16 46 0 28-16 46 0 28 16 46 0 28-16 46 0 28 16 46 0 28-16 46 0 28 16 46 0 28-16 46 0 28 16 46 0" />
           </svg>
           <p class="boot-name">Starlace</p>
-          <svg class="boot-lace" viewBox="0 0 360 22" width="300" height="18" aria-hidden="true">
-            <path fill="none" stroke="#e7b34a" stroke-width="3.5" stroke-linecap="round" d="M6 6c14 14 22 14 36 0s22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0" />
-          </svg>
         </div>
-        <span class="boot-title">Tap to play</span>
+        <button id="boot-music" class="speaker muted" type="button" aria-label="Turn music on" aria-pressed="true">
+          <svg viewBox="0 0 64 64" width="34" height="34" aria-hidden="true">
+            <path fill="#3b2258" d="M10 24h10l14-12v40L20 40H10z" />
+            <path fill="none" stroke="#3b2258" stroke-width="5" stroke-linecap="round" d="M42 22c6 5 6 15 0 20M48 16c10 8 10 24 0 32" />
+          </svg>
+        </button>
+        <button class="boot-title" type="button">Tap to play</button>
       </div>
-    </button>
+    </div>
     <div id="veil"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
