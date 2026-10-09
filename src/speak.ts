@@ -356,6 +356,13 @@ function startBed(): void {
   tickBed();
 }
 
+export function boop(): void {
+  const ctx = audioContext();
+  if (!ctx || quiet) return;
+  tone(ctx, 494, 0.1, 'sine', 0.16);
+  tone(ctx, 740, 0.16, 'triangle', 0.1);
+}
+
 export function unlockAudio(): void {
   audioContext();
   startBed();

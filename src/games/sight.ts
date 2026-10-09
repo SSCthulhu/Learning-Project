@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { picture, sentenceBanner, wordCard } from '../kit';
-import { addActor, bind, currentToken, drop, holdMs, say, showProgress } from '../play';
-import { canvasTexture, celebrate, place, plane, textures, type Clickable } from '../world';
+import { addActor, bind, currentToken, drop, holdMs, remind, say, showProgress } from '../play';
+import { canvasTexture, celebrate, encourage, place, plane, textures, wobble, type Clickable } from '../world';
 import { cap, finish, shuffle, stage } from './common';
 
 const CARD_W = 1.74;
@@ -170,8 +170,8 @@ function steppingStone(index: number): THREE.Mesh {
 
 function stoneSpots(count: number): [number, number][] {
   // Wide enough that a 0.85-scale word card sits on its own stone.
-  const left = 0.30;
-  const right = 0.70;
+  const left = 0.36;
+  const right = 0.66;
   return Array.from({ length: count }, (_, i) => {
     const t = count === 1 ? 0.5 : i / (count - 1);
     const u = left + (right - left) * t;
@@ -228,7 +228,9 @@ async function choose(
     }, 80);
 
     const settleMiss = async (item: WordPick) => {
-      tint(item.mesh, 0xffc8c4);
+      tint(item.mesh, 0xffe7a8);
+      wobble(item.mesh);
+      encourage();
       say(item.tip);
       await wait(token, holdMs(item.tip));
       if (closed || won || token !== currentToken()) return;
@@ -300,7 +302,7 @@ export async function playBanners(token: number): Promise<'done' | 'leave'> {
     async () => {
       for (let i = 0; i < rounds.length; i++) {
         const [word, words] = rounds[i];
-        const items = wordItems(words, word, (label) => `That word says ${label}. Listen: ${word}.`);
+        const items = wordItems(words, word, (label) => `That word says ${label}. Listen one more time.`);
         layWords(items.map((item) => item.mesh));
         for (const item of items) addActor(item.mesh);
         if (i === 0) {
@@ -340,6 +342,7 @@ export async function playPictures(token: number): Promise<'done' | 'leave'> {
         const round = rounds[i];
         const { u0, u1 } = stage();
         const pic = picture(round.pic, 1.55);
+        pic.name = 'clue-picture';
         place(pic, (u0 + u1) / 2, 0.275, 0.48);
         addActor(pic);
         const items = wordItems(round.words, round.word, (label) => `That word says ${label}. Look at the picture again.`);
@@ -359,7 +362,12 @@ export async function playPictures(token: number): Promise<'done' | 'leave'> {
           i === 0
             ? 'Your turn. Look at the picture. Which word matches it?'
             : 'Look at the picture. Which word matches it?';
+        const pictureTap: Clickable = {
+          root: pic,
+          click: () => remind('Look at the picture. Which word matches it?'),
+        };
         const ok = await choose(token, caption, items, `Yes. ${cap(round.word)}!`, {
+          extras: [pictureTap],
           step: i,
           total: rounds.length,
           onCorrect: async (item) => {
@@ -399,6 +407,7 @@ export async function playMissing(token: number): Promise<'done' | 'leave'> {
         const round = rounds[i];
         const { u0, u1 } = stage();
         const banner = sentenceBanner(`${round.before} `, ` ${round.after}`);
+        banner.name = 'clue-scroll';
         place(banner, (u0 + u1) / 2, 0.26, 0.48);
         addActor(banner);
         const spokenAfter = stripEnd(round.after);
@@ -409,7 +418,7 @@ export async function playMissing(token: number): Promise<'done' | 'leave'> {
         );
         for (const item of items) addActor(item.mesh);
         if (i === 0) {
-          const taught = await talk(token, 'See the blank. Hear the hole in the sentence. Pick the word that fits.');
+          const taught = await talk(token, 'The box is empty. Tap the word that fits.');
           if (!taught) return false;
         }
         const caption =
@@ -419,7 +428,12 @@ export async function playMissing(token: number): Promise<'done' | 'leave'> {
         const speech = `${round.before}, hmm, ${spokenAfter}. Which word fits?`;
         const sentence = `${round.before} ${round.word} ${spokenAfter}.`;
         const placed: THREE.Object3D[] = [];
+        const scrollTap: Clickable = {
+          root: banner,
+          click: () => remind(`${round.before}. Hmm. ${spokenAfter}. Which word fits?`),
+        };
         const ok = await choose(token, caption, items, 'Yes. That word fits.', {
+          extras: [scrollTap],
           speech,
           step: i,
           total: rounds.length,
@@ -477,16 +491,17 @@ export async function playTrail(token: number): Promise<'done' | 'leave'> {
         for (let step = 0; step < trail.length; step++) {
           const word = trail[step];
           const others = shuffle(['sun', 'bus', 'cup', 'hat', 'dog', 'is', 'to', 'my'].filter((w) => w !== word && !trail.includes(w))).slice(0, 3);
-          const items = wordItems([word, ...others], word, (label) => `That word says ${label}. Listen: ${word}.`);
+          const items = wordItems([word, ...others], word, (label) => `That word says ${label}. Listen one more time.`);
           layWords(
             items.map((item) => item.mesh),
             { top: 0.3, low: 0.51 },
           );
           for (const item of items) addActor(item.mesh);
           const nextStone = stones[step];
-          const ring = landingMark(2.05, 1.18);
+          const ring = landingMark(2.05, 1.22);
           ring.position.copy(nextStone.position);
-          ring.position.z = nextStone.position.z - 0.04;
+          ring.position.z = nextStone.position.z + 0.2;
+          ring.renderOrder = 6;
           addActor(ring);
           let stonesLive = true;
           const stoneClicks: Clickable[] = stones.map((stone) => ({

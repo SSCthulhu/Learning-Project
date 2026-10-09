@@ -5,6 +5,7 @@ import {
   hereRing,
   mat,
   plate,
+  popBits,
   shapeTile,
   type ShapeName,
 } from '../kit';
@@ -19,6 +20,14 @@ const SHAPE_CLUE: Record<ShapeName, string> = {
   triangle: 'A triangle has three sides.',
   rectangle: 'A rectangle has two long sides and two short sides.',
   star: 'A star has points.',
+};
+
+const SHAPE_HINT: Record<ShapeName, string> = {
+  circle: 'Look for the round one.',
+  square: 'Look for four equal sides.',
+  triangle: 'Look for three sides.',
+  rectangle: 'Look for two long sides and two short sides.',
+  star: 'Look for the one with points.',
 };
 
 const ANSWER = 1.5;
@@ -82,7 +91,7 @@ function layLine(meshes: THREE.Object3D[], v: number, pitch = 1.12): void {
 const JOIN_COIN = 1.4;
 const JOIN_PITCH = 1.78;
 const JOIN_COIN_TOP = 0.485;
-const JOIN_APPLE = 0.5;
+const JOIN_APPLE = 0.72;
 const JOIN_ROW_GAP = 0.3;
 
 function joinCoinBand(): { top: number; low: number } {
@@ -305,7 +314,7 @@ export async function playShapes(token: number): Promise<'done' | 'leave'> {
         return {
           mesh: choiceShape(name, pose),
           correct: name === round.target,
-          tip: name === round.target ? '' : `That is a ${name}. ${SHAPE_CLUE[round.target]}`,
+          tip: name === round.target ? '' : `That is a ${name}. ${SHAPE_HINT[round.target]}`,
         };
       });
       layAnswers(items.map((item) => item.mesh));
@@ -485,12 +494,14 @@ export async function playJoin(token: number): Promise<'done' | 'leave'> {
         : `Yes. ${cap(numberWord(round.a))} and ${numberWord(round.b)} make ${numberWord(answer)}.`;
       const appleTap: Clickable = {
         root: built.board,
-        click: () =>
+        click: () => {
+          popBits(built.board);
           remind(
             round.leave
               ? 'Skip the apples with a red cross. Count the ones that are left.'
               : 'Count the top apples, then keep counting the bottom apples.',
-          ),
+          );
+        },
       };
       const ok = await ask(token, caption, items, praise, [appleTap], pace(i, rounds.length, { speech }));
       actors.forEach(drop);
@@ -553,6 +564,7 @@ export async function playWhich(token: number): Promise<'done' | 'leave'> {
           mesh,
           correct: n === want,
           tip: n === want ? '' : `That is ${numberWord(n)}. Count the stars on each card. Which card has ${askMore}?`,
+          hear: () => popBits(mesh),
         };
       });
       layNumberPair(items.map((item) => item.mesh), metrics.cardW, metrics.cardH);

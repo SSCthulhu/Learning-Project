@@ -1,16 +1,22 @@
 import * as THREE from 'three';
 import { houseButton, quietButton, guide } from './kit';
-import { speak, speakHover, setQuiet, isQuiet, cancelSpeech } from './speak';
+import { boop, speak, speakHover, setQuiet, isQuiet, cancelSpeech } from './speak';
 import {
   placeHud,
   setBackdrop,
   setClickables,
   setGuides,
+  setBopTap,
+  setEmptyTap,
+  setTalking,
   setHoverTalk,
   onWorldResize,
   stage,
   clearGroup,
   celebrate,
+  encourage,
+  giggle,
+  wobble,
   uv,
   type Clickable,
 } from './world';
@@ -41,6 +47,7 @@ const BOP_H = 5.7;
 
 let tokenN = 1;
 let line = '';
+let shown = '';
 let tail: (() => void) | undefined;
 let lock = false;
 let pending: ((ok: boolean) => void) | null = null;
@@ -56,6 +63,13 @@ setHoverTalk((text) => {
   if (pending || lock) return;
   speakHover(text);
 });
+setBopTap(() => {
+  giggle();
+  boop();
+});
+setEmptyTap(() => {
+  if (line) replay();
+});
 onWorldResize(() => layoutHud());
 
 export function currentToken(): number {
@@ -68,15 +82,31 @@ export function holdMs(text: string): number {
 }
 
 export function say(text: string, opts?: { speech?: string; then?: () => void }): void {
+  shown = text;
   line = opts?.speech ?? text;
   tail = opts?.then;
-  caption.textContent = text;
-  caption.parentElement?.classList.toggle('show', text.length > 0);
-  speak(line, false, tail);
+  caption.textContent = shown;
+  caption.parentElement?.classList.toggle('show', shown.length > 0);
+  if (isQuiet()) {
+    markTalking(false);
+    return;
+  }
+  markTalking(true);
+  const after = tail;
+  speak(line, false, () => {
+    markTalking(false);
+    after?.();
+  });
 }
 
 export function replay(): void {
-  if (line) speak(line, true, tail);
+  if (!line) return;
+  markTalking(true);
+  const after = tail;
+  speak(line, true, () => {
+    markTalking(false);
+    after?.();
+  });
 }
 
 export function remind(text: string): void {
@@ -84,15 +114,19 @@ export function remind(text: string): void {
     say(text);
     return;
   }
+  const savedShown = shown;
   const savedLine = line;
   const savedTail = tail;
   caption.textContent = text;
   caption.parentElement?.classList.toggle('show', true);
+  markTalking(true);
   speak(text, true, () => {
+    markTalking(false);
+    shown = savedShown;
     line = savedLine;
     tail = savedTail;
-    caption.textContent = savedLine;
-    caption.parentElement?.classList.toggle('show', savedLine.length > 0);
+    caption.textContent = savedShown;
+    caption.parentElement?.classList.toggle('show', savedShown.length > 0);
   });
 }
 
@@ -165,6 +199,8 @@ export function openPlace(where: PlaceName, home: (() => void) | null, opts?: { 
   const bopH = where === 'hub' ? 4.95 : BOP_H;
   const nim = guide('nim', nimH);
   const bop = guide('bop', bopH);
+  nim.userData.who = 'nim';
+  bop.userData.who = 'bop';
   plant(nim, spec.nim);
   plant(bop, spec.bop);
   stage.add(nim, bop);
@@ -176,24 +212,16 @@ export function openPlace(where: PlaceName, home: (() => void) | null, opts?: { 
   const quiet = quietButton(isQuiet());
   quietMesh = quiet;
   stage.add(quiet);
-  const buttons: Clickable[] = [{ root: quiet, click: toggleQuiet }];
+  const buttons: Clickable[] = [{ root: quiet, hover: isQuiet() ? 'Sound' : 'Quiet', click: toggleQuiet }];
   if (home) {
     const house = houseButton();
     house.name = 'door-home';
     houseMesh = house;
     stage.add(house);
-    let leaveArmed = 0;
     buttons.push({
       root: house,
-      click: () => {
-        const now = Date.now();
-        if (now < leaveArmed) {
-          home();
-          return;
-        }
-        leaveArmed = now + 5000;
-        remind('Tap the house again to go back.');
-      },
+      hover: 'Home',
+      click: () => home(),
     });
   }
   chrome = buttons;
@@ -217,8 +245,15 @@ function plant(root: THREE.Object3D, spot: Spot): void {
   root.position.copy(p);
 }
 
+function markTalking(on: boolean): void {
+  setTalking(on);
+  caption.parentElement?.classList.toggle('talking', on);
+}
+
 function toggleQuiet(): void {
   setQuiet(!isQuiet());
+  const button = chrome.find((item) => item.root === quietMesh);
+  if (button) button.hover = isQuiet() ? 'Sound' : 'Quiet';
   if (!quietMesh) return;
   const next = quietButton(isQuiet());
   const oldMat = quietMesh.material as THREE.MeshBasicMaterial;
@@ -282,8 +317,11 @@ export function ask(
         if (lock) return;
         lock = true;
         const gen = tipGen;
-        recolor(item.mesh, 0xffc8c4);
-        say(item.tip, { then: item.hear });
+        recolor(item.mesh, 0xffe7a8);
+        wobble(item.mesh);
+        encourage();
+        item.hear?.();
+        say(item.tip);
         const listen = holdMs(item.tip) + (item.hear ? 800 : 0);
         void pause(token, listen).then((alive) => {
           if (gen !== tipGen) return;

@@ -4,7 +4,9 @@ import {
   countedPile,
   emptyBowl,
   mat,
+  numeralSign,
   plate,
+  popBits,
   type BitKind,
 } from '../kit';
 import { addActor, ask, drop, holdMs, pause, remind, say, type Choice } from '../play';
@@ -225,23 +227,29 @@ function countAloud(n: number): string {
   return `${cap(words.join(', '))}. Tap how many.`;
 }
 
-function promptNumeral(n: number): THREE.Mesh {
+function startTag(): THREE.Mesh {
   const canvas = document.createElement('canvas');
-  canvas.width = 560;
-  canvas.height = 300;
+  canvas.width = 420;
+  canvas.height = 160;
   const g = canvas.getContext('2d');
   if (!g) throw new Error('canvas');
+  g.fillStyle = '#fff6e4';
+  g.beginPath();
+  g.roundRect(8, 8, 404, 144, 64);
+  g.fill();
+  g.lineWidth = 12;
+  g.strokeStyle = '#e7b34a';
+  g.stroke();
+  g.fillStyle = INK;
+  g.font = '700 72px Starlace, Andika, sans-serif';
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillStyle = INK;
-  g.font = '700 46px Starlace, Andika, sans-serif';
-  g.fillText('This number', 280, 52);
-  g.font = `700 ${n >= 10 ? 150 : 188}px Starlace, Andika, sans-serif`;
-  g.fillText(String(n), 280, 186);
-  const mesh = plane(canvasTexture(canvas), 2.15, 1.15, 6);
+  g.fillText('start', 210, 86);
+  const mesh = plane(canvasTexture(canvas), 1.15, 0.44, 7);
   mesh.userData.disposeMap = true;
-  mesh.userData.noScale = true;
-  mesh.name = `shown-${n}`;
+  (mesh.material as THREE.MeshBasicMaterial).userData.noTint = true;
+  mesh.position.set(0, 0.78, 0.1);
+  mesh.name = 'start-tag';
   return mesh;
 }
 
@@ -331,6 +339,27 @@ function numberMark(n: number, size: number): THREE.Mesh {
   return mesh;
 }
 
+function stoneRing(w: number, h: number): THREE.Mesh {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 280;
+  const g = canvas.getContext('2d');
+  if (!g) throw new Error('canvas');
+  g.lineCap = 'round';
+  g.strokeStyle = '#f0c14a';
+  g.lineWidth = 26;
+  g.beginPath();
+  g.ellipse(256, 140, 214, 96, 0, 0, Math.PI * 2);
+  g.stroke();
+  g.strokeStyle = '#3b2258';
+  g.lineWidth = 8;
+  g.stroke();
+  const mesh = plane(canvasTexture(canvas), w, h, 8);
+  mesh.userData.disposeMap = true;
+  (mesh.material as THREE.MeshBasicMaterial).userData.noTint = true;
+  return mesh;
+}
+
 function stoneHalo(w: number, h: number): THREE.Mesh {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
@@ -373,19 +402,22 @@ function stoneWash(w: number, h: number): THREE.Mesh {
   return mesh;
 }
 
-function steppingStone(n: number, mode: 'plain' | 'halo' | 'hero' = 'plain'): THREE.Group {
+function steppingStone(n: number, mode: 'plain' | 'halo' | 'hero' | 'start' = 'plain'): THREE.Group {
   const tex = textures.stone;
   if (!tex) throw new Error('/art/ui/stone.png');
   const img = tex.image as { width: number; height: number };
   const aspect = img.width / Math.max(1, img.height);
   const w = 1.82;
   const h = w / aspect;
-  const lit = mode !== 'plain';
+  const lit = mode === 'halo' || mode === 'hero';
   const group = new THREE.Group();
   if (lit) {
-    const halo = stoneHalo(w * 1.72, h * 2.9);
-    halo.position.z = -0.06;
+    const halo = stoneHalo(w * 1.22, h * 1.35);
+    halo.position.z = -0.04;
     group.add(halo);
+    const ring = stoneRing(w * 1.22, h * 1.28);
+    ring.position.z = 0.12;
+    group.add(ring);
   }
   const rock = plane(tex, w, h, 4);
   (rock.material as THREE.MeshBasicMaterial).alphaTest = 0.12;
@@ -398,7 +430,8 @@ function steppingStone(n: number, mode: 'plain' | 'halo' | 'hero' = 'plain'): TH
   const mark = numberMark(n, 0.9);
   mark.position.set(0, 0.1, 0.06);
   group.add(mark);
-  group.add(plate(mode === 'hero' ? 2.05 : 1.72, mode === 'hero' ? 2.05 : 1.72));
+  if (mode === 'start') group.add(startTag());
+  group.add(plate(mode === 'hero' ? 2.05 : 1.9, mode === 'hero' ? 2.05 : 1.9));
   if (mode === 'hero') {
     group.scale.setScalar(PATH_LIT_SCALE);
     group.userData.baseScale = PATH_LIT_SCALE;
@@ -416,7 +449,7 @@ function pathNums(n: number): number[] {
 
 function layPath(meshes: THREE.Object3D[]): void {
   const n = meshes.length;
-  const us = spreadU(n, 2.02, 0.5);
+  const us = spreadU(n, 1.7, 0.28);
   meshes.forEach((mesh, i) => {
     const t = n === 1 ? 0.5 : i / Math.max(1, n - 1);
     const v = PATH_STONE_V + Math.sin(t * Math.PI) * 0.02;
@@ -446,9 +479,20 @@ export async function playCount(token: number): Promise<'done' | 'leave'> {
     layBig(demoNums, COIN, 0.42, 0.64);
     const two = demoNums.find((mesh) => mesh.name === 'coin-2') ?? demoNums[1];
     const glow = glowAt(two.position.x / WORLD_W + 0.5, 0.5 - two.position.y / WORLD_H, 1.95, 1.95);
-    const teach =
-      'Watch. I count two apples. One, two. There are two. When there are none, we say zero.';
+    popBits(demoBoard);
+    const teach = 'Watch. One, two. There are two apples.';
     if (!(await teachBeat(token, teach, [demoBoard, glow, ...demoNums]))) return false;
+    const zeroBoard = countingBoard('moon', 0);
+    const zeroNums = [0, 1, 2].map((n) => {
+      const mesh = coin(n, COIN);
+      mesh.name = `coin-${n}`;
+      return mesh;
+    });
+    layBig(zeroNums, COIN, 0.42, 0.64);
+    const zeroCoin = zeroNums.find((mesh) => mesh.name === 'coin-0') ?? zeroNums[0];
+    const zeroGlow = glowAt(zeroCoin.position.x / WORLD_W + 0.5, 0.5 - zeroCoin.position.y / WORLD_H, 1.95, 1.95);
+    const zeroTeach = 'The bowl is empty. None. We say zero.';
+    if (!(await teachBeat(token, zeroTeach, [zeroBoard, zeroGlow, ...zeroNums]))) return false;
     for (let i = 0; i < rounds.length; i++) {
       const round = rounds[i];
       const board = countingBoard(round.bit, round.n);
@@ -472,7 +516,14 @@ export async function playCount(token: number): Promise<'done' | 'leave'> {
           : round.n === 1
             ? `Yes. There is one ${word}.`
             : `Yes. There are ${numberWord(round.n)} ${word}.`;
-      const boardTap: Clickable = { root: board, click: () => remind(countAloud(round.n)) };
+      const boardTap: Clickable = {
+        root: board,
+        click: () => {
+          popBits(board);
+          if (round.n === 0) remind('The bowl is empty. Count what you see.');
+          else remind(countAloud(round.n));
+        },
+      };
       const ok = await ask(token, turn, items, praise, [boardTap], pace(i, rounds.length));
       if (!ok) return false;
       drop(board);
@@ -494,7 +545,7 @@ export async function playSets(token: number): Promise<'done' | 'leave'> {
     { n: 8, sets: [8, 6], bit: 'apple' as BitKind },
   ];
   return finish(token, async () => {
-    const hero = promptNumeral(3);
+    const hero = numeralSign(3);
     place(hero, midU(), MATCH_NUMERAL_V, 0.55);
     const demo = pairClusters('apple', [3, 5], MATCH_GROUPS_V);
     const match = demo.find((g) => g.name === 'set-3') ?? demo[0];
@@ -504,7 +555,7 @@ export async function playSets(token: number): Promise<'done' | 'leave'> {
     if (!(await teachBeat(token, teach, [hero, glow, ...demo]))) return false;
     for (let i = 0; i < rounds.length; i++) {
       const round = rounds[i];
-      const numeral = promptNumeral(round.n);
+      const numeral = numeralSign(round.n);
       place(numeral, midU(), MATCH_NUMERAL_V, 0.55);
       addActor(numeral);
       const order = shuffle(round.sets.slice());
@@ -518,8 +569,13 @@ export async function playSets(token: number): Promise<'done' | 'leave'> {
             count === round.n
               ? ''
               : `That group has ${numberWord(count)}. Count each group and find the one that matches the number.`,
+          hear: () => popBits(mesh),
         };
       });
+      const numeralTap: Clickable = {
+        root: numeral,
+        click: () => remind(`This number is ${numberWord(round.n)}. Count each group. Tap the group that matches.`),
+      };
       const ok = await ask(
         token,
         i === 0
@@ -527,7 +583,7 @@ export async function playSets(token: number): Promise<'done' | 'leave'> {
           : 'Count each group. Tap the group that matches this number.',
         items,
         `Yes. That group has ${numberWord(round.n)}.`,
-        [],
+        [numeralTap],
         pace(i, rounds.length),
       );
       if (!ok) return false;
@@ -567,11 +623,13 @@ export async function playMore(token: number): Promise<'done' | 'leave'> {
           mesh: cards[0],
           correct: wantLeft,
           tip: `That pile has ${numberWord(round.a)}. Count the other pile too.`,
+          hear: () => popBits(cards[0]),
         },
         {
           mesh: cards[1],
           correct: !wantLeft,
           tip: `That pile has ${numberWord(round.b)}. Count the other pile too.`,
+          hear: () => popBits(cards[1]),
         },
       ];
       const askLine = round.fewer ? `Tap the group with fewer ${word}.` : `Tap the group with more ${word}.`;
@@ -601,16 +659,16 @@ export async function playPath(token: number): Promise<'done' | 'leave'> {
   return finish(token, async () => {
     await ensureStone();
     const demoNums = [3, 4, 5];
-    const demo = demoNums.map((n) => steppingStone(n, 'plain'));
+    const demo = demoNums.map((n) => steppingStone(n, n === 5 ? 'halo' : n === 4 ? 'start' : 'plain'));
     layPath(demo);
-    const teach = 'This stone is four. Count up from four. Five comes next.';
+    const teach = 'Start at four. Count up. Five comes next.';
     if (!(await teachBeat(token, teach, demo))) return false;
     for (let i = 0; i < rounds.length; i++) {
       const round = rounds[i];
       const answer = round.dir === 'after' ? round.n + 1 : round.n - 1;
       const nums = pathNums(round.n);
       const items: Choice[] = nums.map((n) => {
-        const mesh = steppingStone(n, 'plain');
+        const mesh = steppingStone(n, n === round.n ? 'start' : 'plain');
         return {
           mesh,
           correct: n === answer,
@@ -626,7 +684,7 @@ export async function playPath(token: number): Promise<'done' | 'leave'> {
       });
       layPath(items.map((item) => item.mesh));
       const spoken = round.dir === 'after' ? 'after' : 'before';
-      const pathLine = `This stone is ${numberWord(round.n)}. Tap the number that comes ${spoken}.`;
+      const pathLine = `Start at ${numberWord(round.n)}. Tap the number that comes ${spoken}.`;
       const ok = await ask(
         token,
         i === 0 ? `Your turn. ${pathLine}` : pathLine,

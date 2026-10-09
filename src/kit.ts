@@ -158,6 +158,43 @@ export function wordCard(label: string, w = 2.15, h = 1.35): THREE.Mesh {
   });
 }
 
+export function numeralSign(n: number): THREE.Mesh {
+  const mesh = paintedBoard('signboard', 860, 480, 2.55, 1.42, (g, face) => {
+    g.fillStyle = INK;
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    g.font = '700 46px Starlace, Andika, sans-serif';
+    g.fillText('This number', face.x + face.w / 2, face.y + face.h * 0.24);
+    paintLabel(g, String(n), face.x + face.w / 2, face.y + face.h * 0.66, face.w * 0.72, face.h * 0.62);
+  });
+  mesh.name = `shown-${n}`;
+  return mesh;
+}
+
+export function collectBits(root: THREE.Object3D): THREE.Object3D[] {
+  const bits: THREE.Object3D[] = [];
+  root.traverse((node) => {
+    if (!node.userData.bit || node.userData.crossed) return;
+    bits.push(node);
+  });
+  bits.sort((a, b) => Number(a.userData.bitIndex) - Number(b.userData.bitIndex));
+  return bits;
+}
+
+export function popBits(root: THREE.Object3D): void {
+  collectBits(root).forEach((bit, index) => {
+    window.setTimeout(() => {
+      if (!bit.parent) return;
+      const base = Number(bit.userData.baseBit ?? bit.scale.x ?? 1) || 1;
+      bit.userData.baseBit = base;
+      bit.scale.setScalar(base * 1.32);
+      window.setTimeout(() => {
+        if (bit.parent) bit.scale.setScalar(base);
+      }, 200);
+    }, index * 170);
+  });
+}
+
 export function coin(n: number, size = 1.4): THREE.Mesh {
   const mesh = paintedBoard('coincard', 512, 512, size, size, (g, face) => {
     const text = String(n);
@@ -758,6 +795,9 @@ export function countedPile(kind: BitKind, count: number, boxW: number, boxH: nu
     const rowCount = Math.min(cols, count - row * cols);
     const mesh = plane(shared ?? canvasTexture(sample as HTMLCanvasElement), bw, bh, 5);
     if (!shared) mesh.userData.disposeMap = true;
+    mesh.userData.bit = true;
+    mesh.userData.bitIndex = i;
+    if (i >= count - crossed) mesh.userData.crossed = true;
     const x = (col - (rowCount - 1) / 2) * stepX;
     const y = ((rows - 1) / 2 - row) * stepY;
     mesh.position.set(x, y, 0.02);

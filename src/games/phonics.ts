@@ -8,7 +8,7 @@ import {
 } from '../kit';
 import { addActor, ask, bind, drop, holdMs, pause, remind, say, showProgress, type Choice } from '../play';
 import { anchorWord, phoneme, soundOf } from '../speak';
-import { celebrate, place, type Clickable } from '../world';
+import { celebrate, encourage, place, wobble, type Clickable } from '../world';
 import { cap, finish, layChoices, pace, shuffle, stage } from './common';
 
 const CARD = 1.52;
@@ -50,10 +50,6 @@ function soundsOf(letters: string[]): string {
 
 function findLine(target: string): string {
   return target === target.toLowerCase() ? `Find little ${target}.` : `Find the letter ${target}.`;
-}
-
-function tipFind(target: string): string {
-  return target === target.toLowerCase() ? `Find little ${target}.` : `Find ${target}.`;
 }
 
 async function teachBeat(
@@ -147,8 +143,11 @@ async function awaitPick(
         if (locked) return;
         locked = true;
         const gen = tipGen;
-        tintCard(item.mesh, 0xffc8c4);
-        say(item.tip, { then: item.hear });
+        tintCard(item.mesh, 0xffe7a8);
+        wobble(item.mesh);
+        encourage();
+        item.hear?.();
+        say(item.tip);
         const listen = holdMs(item.tip) + (item.hear ? 800 : 0);
         void pause(token, listen).then((alive) => {
           if (gen !== tipGen) return;
@@ -186,7 +185,7 @@ export async function playLetters(token: number): Promise<'done' | 'leave'> {
     if (!await teachBeat(token, ['M', 'S', 'A', 'T'], 'M', 'This is the letter M.', OPEN_BAND)) return false;
     for (let i = 0; i < rounds.length; i++) {
       const { target, letters } = rounds[i];
-      const items = letterRound(target, letters, (letter) => `That is ${letter}. ${tipFind(target)}`);
+      const items = letterRound(target, letters, (letter) => `That letter is ${letter}. Look again.`);
       layChoices(items.map((item) => item.mesh), OPEN_BAND);
       const line = findLine(target);
       const ok = await ask(

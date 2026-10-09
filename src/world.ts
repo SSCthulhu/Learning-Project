@@ -38,7 +38,10 @@ let clickables: Clickable[] = [];
 let hoverRoot: THREE.Object3D | null = null;
 let guideRoots: THREE.Object3D[] = [];
 let onGuide: (() => void) | null = null;
+let onBop: (() => void) | null = null;
+let onEmpty: (() => void) | null = null;
 let hoverTalk: ((text: string) => void) | null = null;
+let talking = false;
 let hoverTimer = 0;
 let lastHoverText: string | null = null;
 const extraLit = new Set<THREE.Object3D>();
@@ -167,6 +170,18 @@ export function setGuides(roots: THREE.Object3D[], replay: () => void): void {
   for (const root of roots) root.userData.homeY = root.position.y;
 }
 
+export function setBopTap(fn: (() => void) | null): void {
+  onBop = fn;
+}
+
+export function setEmptyTap(fn: (() => void) | null): void {
+  onEmpty = fn;
+}
+
+export function setTalking(on: boolean): void {
+  talking = on;
+}
+
 export function clearGroup(group: THREE.Group): void {
   const kids = [...group.children];
   for (const child of kids) {
@@ -264,7 +279,13 @@ function onDown(event: PointerEvent): void {
     clickables.find((c) => c.root === hit)?.click();
     return;
   }
-  if (onGuide && pick(guideRoots)) onGuide();
+  const guide = pick(guideRoots);
+  if (guide) {
+    if (guide.userData.who === 'bop') onBop?.();
+    else onGuide?.();
+    return;
+  }
+  onEmpty?.();
 }
 
 export function bindInput(): void {
@@ -284,24 +305,141 @@ export function resize(): void {
 }
 
 let cheer = 0;
+let shake = 0;
+
+type Spark = { mesh: THREE.Mesh; vx: number; vy: number; life: number };
+
+const sparks: Spark[] = [];
+let starTex: THREE.Texture | null = null;
+let moteTex: THREE.Texture | null = null;
+const motes: { mesh: THREE.Mesh; seed: number }[] = [];
+
+function dotTexture(color: string): THREE.Texture {
+  const canvas = document.createElement('canvas');
+  canvas.width = 64;
+  canvas.height = 64;
+  const g = canvas.getContext('2d');
+  if (!g) throw new Error('canvas');
+  const glow = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+  glow.addColorStop(0, color);
+  glow.addColorStop(0.45, color);
+  glow.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = glow;
+  g.fillRect(0, 0, 64, 64);
+  return canvasTexture(canvas);
+}
+
+function burstStars(): void {
+  if (!starTex) starTex = dotTexture('#ffe08a');
+  for (let i = 0; i < 12; i++) {
+    const mesh = plane(starTex, 0.22, 0.22, 12);
+    (mesh.material as THREE.MeshBasicMaterial).depthTest = false;
+    mesh.position.set((Math.random() - 0.5) * 2.4, 0.2 + Math.random() * 0.6, 1.4);
+    scene.add(mesh);
+    const angle = (i / 12) * Math.PI * 2;
+    sparks.push({
+      mesh,
+      vx: Math.cos(angle) * (1.4 + Math.random()),
+      vy: 1.1 + Math.random() * 1.4,
+      life: 1,
+    });
+  }
+}
+
+function spawnMotes(): void {
+  if (motes.length) return;
+  if (!moteTex) moteTex = dotTexture('rgba(255, 236, 170, 0.95)');
+  for (let i = 0; i < 14; i++) {
+    const mesh = plane(moteTex, 0.18, 0.18, 1);
+    (mesh.material as THREE.MeshBasicMaterial).depthTest = false;
+    (mesh.material as THREE.MeshBasicMaterial).opacity = 0.75;
+    scene.add(mesh);
+    motes.push({ mesh, seed: i * 1.7 });
+  }
+}
 
 export function celebrate(): void {
   cheer = 1;
+  burstStars();
+}
+
+export function giggle(): void {
+  cheer = Math.max(cheer, 0.48);
+}
+
+export function encourage(): void {
+  shake = 1;
+}
+
+export function wobble(root: THREE.Object3D): void {
+  root.userData.wobble = 1;
 }
 
 export function start(): void {
   resize();
+  spawnMotes();
   window.addEventListener('resize', resize);
   let clock = 0;
   const loop = () => {
     requestAnimationFrame(loop);
     clock += 0.016;
-    if (cheer > 0) cheer = Math.max(0, cheer - 0.02);
-    const bounce = cheer > 0 ? Math.sin((1 - cheer) * Math.PI) * 0.42 : 0;
-    guideRoots.forEach((root, index) => {
+    if (cheer > 0) cheer = Math.max(0, cheer - 0.018);
+    if (shake > 0) shake = Math.max(0, shake - 0.03);
+    guideRoots.forEach((root) => {
       const home = root.userData.homeY;
       if (typeof home !== 'number') return;
-      root.position.y = home + Math.sin(clock * 1.7 + index * 1.4) * 0.03 + bounce;
+      const who = root.userData.who as string | undefined;
+      let y = home;
+      if (who === 'bop') {
+        const hop = Math.sin(clock * 2.4);
+        y += Math.max(0, hop) * hop * 0.14;
+        root.rotation.z = Math.sin(clock * 1.4) * 0.035;
+        if (cheer > 0) y += Math.sin((1 - cheer) * Math.PI) * 0.62;
+        if (shake > 0) root.rotation.z = Math.sin(shake * 46) * 0.14 * shake;
+      } else {
+        y += Math.sin(clock * 1.5) * 0.045;
+        const talk = talking ? 1 + Math.sin(clock * 16) * 0.03 : 1;
+        root.scale.setScalar(talk);
+        root.rotation.z = Math.sin(clock * 0.7) * 0.02;
+      }
+      root.position.y = y;
+    });
+    for (const child of stage.children) {
+      const w = child.userData.wobble as number | undefined;
+      if (w == null || w <= 0) continue;
+      if (child.userData.baseRot == null) child.userData.baseRot = child.rotation.z;
+      const next = w - 0.045;
+      child.userData.wobble = next;
+      if (next <= 0) {
+        child.rotation.z = child.userData.baseRot as number;
+        delete child.userData.baseRot;
+        child.userData.wobble = 0;
+      } else {
+        child.rotation.z = (child.userData.baseRot as number) + Math.sin(next * 28) * 0.1 * next;
+      }
+    }
+    for (let i = sparks.length - 1; i >= 0; i--) {
+      const spark = sparks[i];
+      spark.life -= 0.02;
+      spark.vy -= 0.045;
+      spark.mesh.position.x += spark.vx * 0.016;
+      spark.mesh.position.y += spark.vy * 0.016;
+      (spark.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, spark.life);
+      if (spark.life <= 0) {
+        scene.remove(spark.mesh);
+        spark.mesh.geometry.dispose();
+        (spark.mesh.material as THREE.Material).dispose();
+        sparks.splice(i, 1);
+      }
+    }
+    motes.forEach((mote, index) => {
+      const s = mote.seed;
+      const lane = index % 2 === 0 ? 0.05 : 0.86;
+      const u = lane + ((index * 0.04 + clock * 0.02) % 0.1);
+      const v = 0.12 + (Math.sin(clock * 0.45 + s) * 0.5 + 0.5) * 0.72;
+      mote.mesh.position.copy(uv(u, v, 0.18));
+      const mat = mote.mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.35 + (Math.sin(clock * 1.7 + s) * 0.5 + 0.5) * 0.45;
     });
     renderer.render(scene, camera);
   };
