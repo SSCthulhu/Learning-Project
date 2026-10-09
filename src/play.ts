@@ -10,6 +10,7 @@ import {
   setBopTap,
   setEmptyTap,
   setHoverTalk,
+  setTalking,
   onWorldResize,
   stage,
   clearGroup,
@@ -291,6 +292,7 @@ function plant(root: THREE.Object3D, spot: Spot): void {
 }
 
 function markTalking(on: boolean): void {
+  setTalking(on);
   caption.parentElement?.classList.toggle('talking', on);
 }
 

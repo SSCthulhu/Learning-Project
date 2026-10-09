@@ -1569,6 +1569,7 @@ export function guide(which: 'nim' | 'bop', height: number): THREE.Group {
   basic(mesh).alphaTest = 0.35;
   matNoTintShared(mesh);
   mesh.position.y = height * (foot - 0.5);
+  if (which === 'nim') mesh.userData.beak = true;
   const root = new THREE.Group();
   root.add(mesh);
   const shadow = softShadow(height * aspect * 0.55);

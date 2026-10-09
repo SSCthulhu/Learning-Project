@@ -42,6 +42,10 @@ let onGuide: (() => void) | null = null;
 let onBop: (() => void) | null = null;
 let onEmpty: (() => void) | null = null;
 let hoverTalk: ((text: string) => void) | null = null;
+let talking = false;
+let beakAcc = 0;
+let beakStep = 0;
+const BEAK_ORDER = [0, 1, 2, 1];
 let hoverTimer = 0;
 let lastHoverText: string | null = null;
 const extraLit = new Set<THREE.Object3D>();
@@ -76,6 +80,8 @@ export async function preload(): Promise<void> {
     songkeep: asset('/art/songkeep.png'),
     citadel: asset('/art/citadel.png'),
     nim: asset('/art/nim.png'),
+    nimTalk1: asset('/art/nim-talk-1.png'),
+    nimTalk2: asset('/art/nim-talk-2.png'),
     bop: asset('/art/bop.png'),
     shelf: asset('/art/market-shelf.png'),
     feet: asset('/art/little-feet.png'),
@@ -190,6 +196,32 @@ export function setBopTap(fn: (() => void) | null): void {
 
 export function setEmptyTap(fn: (() => void) | null): void {
   onEmpty = fn;
+}
+
+export function setTalking(on: boolean): void {
+  talking = on;
+  if (!on) {
+    beakAcc = 0;
+    beakStep = 0;
+    showBeak(0);
+  }
+}
+
+function showBeak(frame: number): void {
+  const key = frame === 1 ? 'nimTalk1' : frame === 2 ? 'nimTalk2' : 'nim';
+  const tex = textures[key];
+  if (!tex) return;
+  for (const root of guideRoots) {
+    if (root.userData.who !== 'nim') continue;
+    root.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh || !mesh.userData.beak) return;
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      if (mat.map === tex) return;
+      mat.map = tex;
+      mat.needsUpdate = true;
+    });
+  }
 }
 
 export function clearGroup(group: THREE.Group): void {
@@ -400,6 +432,14 @@ export function start(): void {
     clock += 0.016;
     if (cheer > 0) cheer = Math.max(0, cheer - 0.018);
     if (shake > 0) shake = Math.max(0, shake - 0.03);
+    if (talking) {
+      beakAcc += 0.016;
+      if (beakAcc >= 0.13) {
+        beakAcc = 0;
+        beakStep = (beakStep + 1) % BEAK_ORDER.length;
+        showBeak(BEAK_ORDER[beakStep]);
+      }
+    }
     guideRoots.forEach((root) => {
       const home = root.userData.homeY;
       if (typeof home !== 'number') return;
