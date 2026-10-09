@@ -306,10 +306,15 @@ function stopClip(): void {
   clip = null;
 }
 
+function recordingUrl(file: string): string {
+  if (/^https?:\/\//i.test(file)) return file;
+  return `${import.meta.env.BASE_URL}voice/${file}`;
+}
+
 function playRecording(line: string): Promise<boolean> {
   const file = voiceFiles.get(line);
   if (!file) return Promise.resolve(false);
-  const el = new Audio(`${import.meta.env.BASE_URL}voice/${file}`);
+  const el = new Audio(recordingUrl(file));
   clip = el;
   return new Promise((resolve) => {
     let settled = false;
