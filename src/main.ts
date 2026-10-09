@@ -118,10 +118,11 @@ function project(prefix: string): { name: string; x: number; y: number }[] {
     if (!obj.name.startsWith(prefix)) return;
     obj.getWorldPosition(point);
     point.project(camera);
+    const rect = (document.getElementById('view') as HTMLCanvasElement).getBoundingClientRect();
     hits.push({
       name: obj.name,
-      x: (point.x * 0.5 + 0.5) * window.innerWidth,
-      y: (-point.y * 0.5 + 0.5) * window.innerHeight,
+      x: rect.left + (point.x * 0.5 + 0.5) * rect.width,
+      y: rect.top + (-point.y * 0.5 + 0.5) * rect.height,
     });
   });
   return hits;

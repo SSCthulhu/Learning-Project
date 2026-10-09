@@ -125,6 +125,7 @@ export function setBackdrop(key: string): void {
   if (!tex) return;
   backdropMat.map = tex;
   backdropMat.needsUpdate = true;
+  document.documentElement.style.setProperty('--place', `url("${asset(`/art/${key}.png`)}")`);
 }
 
 function listed(root: THREE.Object3D): boolean {
@@ -171,8 +172,10 @@ export function placeHud(
   slot = 0,
 ): void {
   const vis = visibleAt(z);
-  const vw = Math.max(1, window.innerWidth);
-  const vh = Math.max(1, window.innerHeight);
+  const view = renderer.domElement.getBoundingClientRect();
+  const vw = Math.max(1, view.width);
+  const vh = Math.max(1, view.height);
+  marginPx *= vh / 800;
   const su = worldW / vis.w;
   const sv = worldH / vis.h;
   const gap = 10 / vw;
@@ -341,14 +344,40 @@ export function bindInput(): void {
   el.addEventListener('pointerdown', onDown);
 }
 
+export function placeChrome(): void {
+  const frame = renderer.domElement.getBoundingClientRect();
+  const prompt = document.getElementById('prompt');
+  const progress = document.getElementById('progress');
+  if (prompt) {
+    if (frame.top > 80 && prompt.offsetHeight > 0) {
+      prompt.style.top = `${Math.max(12, frame.top - prompt.offsetHeight - 10)}px`;
+    } else {
+      prompt.style.top = '';
+    }
+  }
+  if (progress) {
+    const below = window.innerHeight - frame.bottom;
+    if (below > 56 && progress.offsetHeight > 0) {
+      progress.style.bottom = `${Math.max(12, below - progress.offsetHeight - 10)}px`;
+    } else {
+      progress.style.bottom = '';
+    }
+  }
+}
+
 export function resize(): void {
-  const w = window.innerWidth;
-  const h = window.innerHeight;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const rect = renderer.domElement.getBoundingClientRect();
+  const w = Math.max(1, Math.round(rect.width));
+  const h = Math.max(1, Math.round(rect.height));
+  let dpr = window.devicePixelRatio || 1;
+  const maxPixels = 3840 * 2160;
+  if (w * h * dpr * dpr > maxPixels) dpr = Math.sqrt(maxPixels / (w * h));
+  renderer.setPixelRatio(Math.min(2, Math.max(1, dpr)));
   renderer.setSize(w, h, false);
-  camera.aspect = w / Math.max(1, h);
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
   resizeHook?.();
+  placeChrome();
 }
 
 let cheer = 0;
@@ -425,6 +454,8 @@ export function wobble(root: THREE.Object3D): void {
 export function start(): void {
   resize();
   spawnMotes();
+  const frame = renderer.domElement.parentElement;
+  if (frame) new ResizeObserver(() => resize()).observe(frame);
   window.addEventListener('resize', resize);
   let clock = 0;
   const loop = () => {
