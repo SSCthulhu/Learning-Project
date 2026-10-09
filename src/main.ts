@@ -50,15 +50,39 @@ async function bootUp(): Promise<void> {
   bindInput();
   start();
   ready = true;
-  openPlace('grove', null, { chrome: false });
+  openPlace('grove', null, { chrome: false, guides: false });
 }
 
-function begin(): void {
+function waitFade(el: HTMLElement, ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      el.removeEventListener('transitionend', onEnd);
+      resolve();
+    };
+    const onEnd = (event: TransitionEvent) => {
+      if (event.target === el && event.propertyName === 'opacity') finish();
+    };
+    el.addEventListener('transitionend', onEnd);
+    window.setTimeout(finish, ms);
+  });
+}
+
+async function begin(): Promise<void> {
   if (!ready || started) return;
   started = true;
-  boot.classList.add('gone');
   unlockAudio();
+  const fade = boot.querySelector('.boot-fade') as HTMLElement;
+  const veil = document.getElementById('veil') as HTMLElement;
+  boot.classList.add('leaving');
+  await waitFade(fade, 900);
+  veil.classList.add('on');
+  await waitFade(veil, 1000);
   goHub();
+  boot.classList.add('gone');
+  requestAnimationFrame(() => veil.classList.remove('on'));
 }
 
 function project(prefix: string): { name: string; x: number; y: number }[] {

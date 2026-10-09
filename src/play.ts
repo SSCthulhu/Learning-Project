@@ -208,7 +208,7 @@ export type Choice = {
 export function openPlace(
   where: PlaceName,
   home: (() => void) | null,
-  opts?: { chrome?: boolean; back?: (() => void) | null },
+  opts?: { chrome?: boolean; guides?: boolean; back?: (() => void) | null },
 ): number {
   interrupt();
   clearGroup(stage);
@@ -220,16 +220,20 @@ export function openPlace(
   const spec = PLACES[where];
   placeNow = where;
   setBackdrop(spec.bg);
-  const nimH = where === 'hub' ? 3.95 : NIM_H;
-  const bopH = where === 'hub' ? 4.95 : BOP_H;
-  const nim = guide('nim', nimH);
-  const bop = guide('bop', bopH);
-  nim.userData.who = 'nim';
-  bop.userData.who = 'bop';
-  plant(nim, spec.nim);
-  plant(bop, spec.bop);
-  stage.add(nim, bop);
-  setGuides([nim, bop], replay);
+  if (opts?.guides === false) {
+    setGuides([], replay);
+  } else {
+    const nimH = where === 'hub' ? 3.95 : NIM_H;
+    const bopH = where === 'hub' ? 4.95 : BOP_H;
+    const nim = guide('nim', nimH);
+    const bop = guide('bop', bopH);
+    nim.userData.who = 'nim';
+    bop.userData.who = 'bop';
+    plant(nim, spec.nim);
+    plant(bop, spec.bop);
+    stage.add(nim, bop);
+    setGuides([nim, bop], replay);
+  }
   if (opts?.chrome === false) {
     setHud([]);
     setClickables([]);

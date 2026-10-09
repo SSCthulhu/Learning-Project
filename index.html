@@ -19,9 +19,21 @@
       <p id="caption"></p>
     </div>
     <div id="progress"></div>
-    <button id="boot" type="button">
-      <span class="boot-title">Tap to play</span>
+    <button id="boot" type="button" aria-label="Starlace. Tap to play.">
+      <div class="boot-fade">
+        <div class="boot-logo">
+          <svg class="boot-star" viewBox="0 0 64 64" width="58" height="58" aria-hidden="true">
+            <path fill="#e7b34a" stroke="#fff6e4" stroke-width="4" stroke-linejoin="round" d="M32 4l6.6 16.4L56 22.2 41.2 33.4 46.2 52 32 42.2 17.8 52l5-18.6L8 22.2l17.4-1.8z" />
+          </svg>
+          <p class="boot-name">Starlace</p>
+          <svg class="boot-lace" viewBox="0 0 360 22" width="300" height="18" aria-hidden="true">
+            <path fill="none" stroke="#e7b34a" stroke-width="3.5" stroke-linecap="round" d="M6 6c14 14 22 14 36 0s22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0 22-14 36 0 22 14 36 0" />
+          </svg>
+        </div>
+        <span class="boot-title">Tap to play</span>
+      </div>
     </button>
+    <div id="veil"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
