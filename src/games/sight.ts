@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { picture, sentenceBanner, wordCard } from '../kit';
 import { addActor, bind, currentToken, drop, holdMs, pause, remind, say, showProgress } from '../play';
-import { canvasTexture, celebrate, encourage, place, plane, textures, wobble, type Clickable } from '../world';
+import { asset, canvasTexture, celebrate, encourage, place, plane, textures, wobble, type Clickable } from '../world';
 import { cap, finish, shuffle, stage } from './common';
 
 const CARD_W = 1.74;
@@ -115,7 +115,7 @@ async function loadStone(): Promise<THREE.Texture> {
   if (had) return had;
   await new Promise<void>((resolve, reject) => {
     new THREE.TextureLoader().load(
-      '/art/ui/stone.png',
+      asset('/art/ui/stone.png'),
       (tex) => {
         tex.colorSpace = THREE.SRGBColorSpace;
         tex.magFilter = THREE.LinearFilter;

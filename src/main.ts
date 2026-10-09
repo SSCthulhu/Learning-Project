@@ -2,7 +2,7 @@ import { findGame, hubZones, lobbySigns, QUESTS, type GameDef, type QuestDef } f
 import * as THREE from 'three';
 import { bind, currentToken, openPlace, replay, say } from './play';
 import { unlockAudio } from './speak';
-import { bindInput, camera, preload, scene, start } from './world';
+import { asset, bindInput, camera, preload, scene, start } from './world';
 
 const boot = document.getElementById('boot') as HTMLButtonElement;
 let ready = false;
@@ -45,7 +45,7 @@ function goto(id: string): void {
 }
 
 async function bootUp(): Promise<void> {
-  const face = new FontFace('Starlace', 'url(/fonts/Andika-Bold.ttf)');
+  const face = new FontFace('Starlace', `url(${asset('/fonts/Andika-Bold.ttf')})`);
   await Promise.all([face.load().then((loaded) => document.fonts.add(loaded)), preload()]);
   bindInput();
   start();

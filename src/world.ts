@@ -64,25 +64,29 @@ export function place(obj: THREE.Object3D, u: number, v: number, z = 0.4): THREE
   return obj;
 }
 
+export function asset(path: string): string {
+  return `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`;
+}
+
 export async function preload(): Promise<void> {
   const files: Record<string, string> = {
-    village: '/art/village.png',
-    grove: '/art/grove.png',
-    market: '/art/market.png',
-    songkeep: '/art/songkeep.png',
-    citadel: '/art/citadel.png',
-    nim: '/art/nim.png',
-    bop: '/art/bop.png',
-    shelf: '/art/market-shelf.png',
-    feet: '/art/little-feet.png',
-    tile: '/art/ui/tile.png',
-    signboard: '/art/ui/sign.png',
-    coincard: '/art/ui/coin.png',
-    stone: '/art/ui/stone.png',
-    scroll: '/art/ui/scroll.png',
+    village: asset('/art/village.png'),
+    grove: asset('/art/grove.png'),
+    market: asset('/art/market.png'),
+    songkeep: asset('/art/songkeep.png'),
+    citadel: asset('/art/citadel.png'),
+    nim: asset('/art/nim.png'),
+    bop: asset('/art/bop.png'),
+    shelf: asset('/art/market-shelf.png'),
+    feet: asset('/art/little-feet.png'),
+    tile: asset('/art/ui/tile.png'),
+    signboard: asset('/art/ui/sign.png'),
+    coincard: asset('/art/ui/coin.png'),
+    stone: asset('/art/ui/stone.png'),
+    scroll: asset('/art/ui/scroll.png'),
   };
   for (const name of ['cat', 'dog', 'pig', 'sun', 'bus', 'cup', 'hat', 'map', 'bed', 'apple', 'moon', 'fish', 'star']) {
-    files[name] = `/art/bits/${name}.png`;
+    files[name] = asset(`/art/bits/${name}.png`);
   }
   const entries = Object.entries(files);
   for (let i = 0; i < entries.length; i += 4) {

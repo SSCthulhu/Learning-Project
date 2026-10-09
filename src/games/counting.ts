@@ -10,7 +10,7 @@ import {
   type BitKind,
 } from '../kit';
 import { addActor, ask, drop, holdMs, pause, remind, say, type Choice } from '../play';
-import { canvasTexture, place, plane, setClickables, textures, WORLD_H, WORLD_W, type Clickable } from '../world';
+import { asset, canvasTexture, place, plane, setClickables, textures, WORLD_H, WORLD_W, type Clickable } from '../world';
 import { cap, finish, numberWord, pace, shuffle, stage } from './common';
 
 const BIT_WORD: Record<BitKind, string> = {
@@ -302,7 +302,7 @@ async function ensureStone(): Promise<THREE.Texture> {
   if (cached) return cached;
   const tex = await new Promise<THREE.Texture>((resolve, reject) => {
     new THREE.TextureLoader().load(
-      '/art/ui/stone.png',
+      asset('/art/ui/stone.png'),
       (loaded) => {
         loaded.colorSpace = THREE.SRGBColorSpace;
         loaded.magFilter = THREE.LinearFilter;
