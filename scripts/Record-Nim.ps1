@@ -75,14 +75,14 @@ function Save-Index {
 
 function Explain-Failure([int]$code, [string]$detail) {
   $text = $detail.ToLower()
+  if ($text -match 'quota|credit|limit exceeded|insufficient') {
+    return 'Your ElevenLabs account is out of characters. Add characters to this same account, then run this again. Do not delete the Nim-Voice folder. Saved sentences will be skipped.'
+  }
   if ($code -eq 401) {
-    return 'That API key was not accepted. Create a new key, set Text to Speech to Access, and run this again.'
+    return 'That API key was not accepted. Create a new key, set Text to Speech to Access, and run this again. Do not delete the Nim-Voice folder. Saved sentences will be skipped.'
   }
   if ($code -eq 403 -or $text -match 'permission|missing_permissions|unauthorized') {
-    return 'This key is not allowed to make speech. Create a new key and set Text to Speech to Access.'
-  }
-  if ($text -match 'quota|credit|limit exceeded|insufficient') {
-    return 'Your ElevenLabs account is out of characters. Stop here and tell me. The sentences already saved are kept.'
+    return 'This key is not allowed to make speech. Create a new key and set Text to Speech to Access. Do not delete the Nim-Voice folder. Saved sentences will be skipped.'
   }
   if ($text -match 'voice_not_found|voice not found') {
     return 'ElevenLabs could not find that voice. Click Nim, then Copy voice ID, and run this again.'
