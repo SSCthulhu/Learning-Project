@@ -35,8 +35,11 @@ Write-Host ''
 Write-Host 'Press Enter to start.'
 [void](Read-Host)
 
-if ($key.Length -lt 10) {
-  Write-Host 'That does not look like an API key. Copy the key from the ElevenLabs page and run this again.'
+if (-not $key.StartsWith('sk_')) {
+  Write-Host ''
+  Write-Host 'That is the short code from the key list, not the key itself.'
+  Write-Host 'Create the key again. On the next screen, copy the long key that starts with sk_.'
+  Write-Host 'That key is shown only once.'
   exit 1
 }
 if ($voiceId -notmatch '^[A-Za-z0-9]{15,}$') {
