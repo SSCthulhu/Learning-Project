@@ -461,103 +461,53 @@ function playSynth(kind: string): void {
   else vowel(ctx, 600, 1400, 0.3);
 }
 
-const C3 = 130.81;
-const E3 = 164.81;
-const G3 = 196.0;
-const A3 = 220.0;
-const C4 = 261.63;
-const D4 = 293.66;
-const E4 = 329.63;
-const G4 = 392.0;
-const A4 = 440.0;
-const C5 = 523.25;
-const BED_STEP = 60 / 92 / 2;
-const BED_MELODY = [C4, E4, G4, C5, G4, E4, A4, G4, D4, E4, G4, A4, G4, E4, D4, C4];
-const BED_BASS = [C3, 0, G3, 0, A3, 0, E3, 0, C3, 0, G3, 0, A3, 0, C3, 0];
+const BED_URL = `${import.meta.env.BASE_URL}music/magical-discovery.mp3`;
+const BED_GAIN = 0.09;
 
-let bedMaster: GainNode | null = null;
-let bedMix: GainNode | null = null;
-let bedNoise: AudioBuffer | null = null;
-let bedNext = 0;
-let bedStep = 0;
-let bedOn = false;
+let bedEl: HTMLAudioElement | null = null;
+let bedGain: GainNode | null = null;
+let bedPause = 0;
+
+function ensureBed(): void {
+  if (bedEl && bedGain) return;
+  const ctx = audioContext();
+  if (!ctx) return;
+  const el = new Audio(BED_URL);
+  el.loop = true;
+  el.preload = 'auto';
+  const source = ctx.createMediaElementSource(el);
+  const gain = ctx.createGain();
+  gain.gain.value = quiet ? 0.0001 : BED_GAIN;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  bedEl = el;
+  bedGain = gain;
+}
 
 function fadeBed(target: number): void {
-  if (!bedMaster || !audio) return;
+  ensureBed();
+  if (!bedGain || !audio || !bedEl) return;
+  const dest = target < 0.5 ? 0.0001 : BED_GAIN;
   const now = audio.currentTime;
-  const from = Math.max(0.0001, bedMaster.gain.value);
-  bedMaster.gain.cancelScheduledValues(now);
-  bedMaster.gain.setValueAtTime(from, now);
-  bedMaster.gain.exponentialRampToValueAtTime(Math.max(0.0001, target), now + 0.45);
-}
-
-function pluckBed(freq: number, when: number, peak: number, type: OscillatorType, dur: number): void {
-  if (!audio || !bedMix || freq <= 0) return;
-  const osc = audio.createOscillator();
-  osc.type = type;
-  osc.frequency.value = freq;
-  const gain = audio.createGain();
-  gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + 0.018);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-  osc.connect(gain);
-  gain.connect(bedMix);
-  osc.start(when);
-  osc.stop(when + dur + 0.02);
-}
-
-function hatBed(when: number): void {
-  if (!audio || !bedMix || !bedNoise) return;
-  const source = audio.createBufferSource();
-  source.buffer = bedNoise;
-  const filter = audio.createBiquadFilter();
-  filter.type = 'highpass';
-  filter.frequency.value = 7200;
-  const gain = audio.createGain();
-  gain.gain.setValueAtTime(0.0001, when);
-  gain.gain.exponentialRampToValueAtTime(0.12, when + 0.004);
-  gain.gain.exponentialRampToValueAtTime(0.0001, when + 0.045);
-  source.connect(filter);
-  filter.connect(gain);
-  gain.connect(bedMix);
-  source.start(when);
-}
-
-function tickBed(): void {
-  if (!audio || !bedOn) return;
-  const horizon = audio.currentTime + 0.22;
-  while (bedNext < horizon) {
-    const i = bedStep % 16;
-    pluckBed(BED_MELODY[i], bedNext, 0.62, 'triangle', 0.38);
-    pluckBed(BED_BASS[i], bedNext, 0.34, 'sine', 0.52);
-    if (i % 2 === 1) hatBed(bedNext);
-    bedNext += BED_STEP;
-    bedStep += 1;
+  const from = Math.max(0.0001, bedGain.gain.value);
+  bedGain.gain.cancelScheduledValues(now);
+  bedGain.gain.setValueAtTime(from, now);
+  bedGain.gain.exponentialRampToValueAtTime(dest, now + 0.45);
+  window.clearTimeout(bedPause);
+  if (dest > 0.001) {
+    void bedEl.play().catch(() => {});
+    return;
   }
-  window.setTimeout(tickBed, 50);
+  const el = bedEl;
+  bedPause = window.setTimeout(() => {
+    if (quiet) el.pause();
+  }, 500);
 }
 
 function startBed(): void {
-  if (bedOn) return;
-  const ctx = audioContext();
-  if (!ctx) return;
-  const mix = ctx.createGain();
-  mix.gain.value = 0.035;
-  const master = ctx.createGain();
-  master.gain.value = quiet ? 0.0001 : 1;
-  mix.connect(master);
-  master.connect(ctx.destination);
-  const samples = Math.max(1, Math.floor(ctx.sampleRate * 0.08));
-  const noise = ctx.createBuffer(1, samples, ctx.sampleRate);
-  const data = noise.getChannelData(0);
-  for (let i = 0; i < samples; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / samples);
-  bedMix = mix;
-  bedMaster = master;
-  bedNoise = noise;
-  bedStep = 0;
-  bedNext = ctx.currentTime + 0.06;
-  bedOn = true;
-  tickBed();
+  ensureBed();
+  if (!bedEl || quiet) return;
+  fadeBed(1);
 }
 
 export function boop(): void {
