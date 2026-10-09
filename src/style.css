@@ -47,16 +47,16 @@ body::before {
 }
 
 #prompt {
-  position: fixed;
-  top: max(12px, env(safe-area-inset-top));
+  position: absolute;
+  top: 1.6cqh;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 3;
+  z-index: 2;
   display: none;
   align-items: center;
-  gap: 12px;
-  width: min(920px, calc(100vw - 160px));
-  max-width: calc(100vw - 160px);
+  gap: 1.2cqh;
+  width: min(68cqw, calc(100% - 20cqh));
+  max-width: calc(100% - 20cqh);
   pointer-events: none;
 }
 
@@ -66,21 +66,30 @@ body::before {
   pointer-events: auto;
   position: relative;
   flex: none;
-  width: clamp(44px, 7vmin, 160px);
-  height: clamp(44px, 7vmin, 160px);
+  width: clamp(44px, 6.4cqh, 136px);
+  height: clamp(44px, 6.4cqh, 136px);
   padding: 0;
-  border: 0.08em solid #e7b34a;
+  border: 0.38cqh solid #e7b34a;
   border-radius: 50%;
   background: #fff6e4;
-  box-shadow: 0 0.4vmin 0 rgba(59, 34, 88, 0.12);
+  box-shadow: 0 0.4cqh 0 rgba(59, 34, 88, 0.12);
   cursor: pointer;
-  font-size: clamp(44px, 7vmin, 160px);
+}
+
+#hear,
+#boot-music {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
 }
 
 #hear svg,
 #boot-music svg {
-  width: 52%;
-  height: 52%;
+  display: block;
+  width: 50%;
+  height: 50%;
+  flex: none;
 }
 
 #hear:hover { background: #ffe7a8; }
@@ -114,11 +123,11 @@ body::before {
   border-radius: 0.45em;
   background: rgba(255, 246, 228, 0.96);
   color: #3b2258;
-  font-size: clamp(18px, 3.2vmin, 80px);
+  font-size: clamp(18px, 3cqh, 64px);
   line-height: 1.25;
   text-align: center;
   pointer-events: none;
-  box-shadow: 0 0.45cqh 0 rgba(59, 34, 88, 0.12);
+  box-shadow: 0 0.4cqh 0 rgba(59, 34, 88, 0.12);
 }
 
 #boot {
@@ -179,13 +188,13 @@ body::before {
   top: 2cqh;
   right: 2cqh;
   z-index: 2;
-  width: clamp(44px, 8.2cqh, 200px);
-  height: clamp(44px, 8.2cqh, 200px);
+  width: clamp(44px, 6.4cqh, 136px);
+  height: clamp(44px, 6.4cqh, 136px);
   padding: 0;
-  border: 0.45cqh solid #e7b34a;
+  border: 0.38cqh solid #e7b34a;
   border-radius: 50%;
   background: #fff6e4;
-  box-shadow: 0 0.45cqh 0 rgba(59, 34, 88, 0.12);
+  box-shadow: 0 0.4cqh 0 rgba(59, 34, 88, 0.12);
   cursor: pointer;
   pointer-events: auto;
 }
@@ -242,22 +251,22 @@ body::before {
 #veil.on { opacity: 1; }
 
 #progress {
-  position: fixed;
+  position: absolute;
   left: 50%;
-  bottom: max(12px, env(safe-area-inset-bottom));
+  bottom: 1.4cqh;
   transform: translateX(-50%);
   z-index: 3;
   display: none;
   flex-direction: row;
-  gap: 0.8vmin;
+  gap: 0.7cqh;
   pointer-events: none;
 }
 
 #progress.on { display: flex; }
 
 #progress span {
-  width: clamp(12px, 1.8vmin, 40px);
-  height: clamp(12px, 1.8vmin, 40px);
+  width: clamp(10px, 1.7cqh, 36px);
+  height: clamp(10px, 1.7cqh, 36px);
   border-radius: 50%;
   border: 0.12em solid #3b2258;
   background: #fff6e4;

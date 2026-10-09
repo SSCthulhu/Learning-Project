@@ -344,27 +344,6 @@ export function bindInput(): void {
   el.addEventListener('pointerdown', onDown);
 }
 
-export function placeChrome(): void {
-  const frame = renderer.domElement.getBoundingClientRect();
-  const prompt = document.getElementById('prompt');
-  const progress = document.getElementById('progress');
-  if (prompt) {
-    if (frame.top > 80 && prompt.offsetHeight > 0) {
-      prompt.style.top = `${Math.max(12, frame.top - prompt.offsetHeight - 10)}px`;
-    } else {
-      prompt.style.top = '';
-    }
-  }
-  if (progress) {
-    const below = window.innerHeight - frame.bottom;
-    if (below > 56 && progress.offsetHeight > 0) {
-      progress.style.bottom = `${Math.max(12, below - progress.offsetHeight - 10)}px`;
-    } else {
-      progress.style.bottom = '';
-    }
-  }
-}
-
 export function resize(): void {
   const rect = renderer.domElement.getBoundingClientRect();
   const w = Math.max(1, Math.round(rect.width));
@@ -377,7 +356,6 @@ export function resize(): void {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   resizeHook?.();
-  placeChrome();
 }
 
 let cheer = 0;

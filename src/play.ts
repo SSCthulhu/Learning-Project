@@ -12,7 +12,6 @@ import {
   setHoverTalk,
   setTalking,
   onWorldResize,
-  placeChrome,
   stage,
   clearGroup,
   celebrate,
@@ -93,7 +92,6 @@ export function say(text: string, opts?: { speech?: string; then?: () => void })
   tail = opts?.then;
   caption.textContent = shown;
   caption.parentElement?.classList.toggle('show', shown.length > 0);
-  placeChrome();
   if (isVoiceQuiet()) return;
   const after = tail;
   speak(line, false, () => {
@@ -182,7 +180,6 @@ export function showProgress(step: number | null, total: number | null): void {
     progressRow.appendChild(dot);
   }
   progressRow.classList.add('on');
-  placeChrome();
 }
 
 export function interrupt(): void {

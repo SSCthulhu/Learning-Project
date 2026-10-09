@@ -10,6 +10,16 @@
   <body>
     <div id="frame">
     <canvas id="view"></canvas>
+    <div id="prompt">
+      <button id="hear" type="button" aria-label="Turn voice off" aria-pressed="false">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path fill="#3b2258" d="M10 24h10l14-12v40L20 40H10z" />
+          <path fill="none" stroke="#3b2258" stroke-width="5" stroke-linecap="round" d="M42 22c6 5 6 15 0 20M48 16c10 8 10 24 0 32" />
+        </svg>
+      </button>
+      <p id="caption"></p>
+    </div>
+    <div id="progress"></div>
     <div id="boot">
       <div class="boot-fade">
         <div class="boot-logo">
@@ -29,7 +39,7 @@
           <p class="boot-name">Starlace</p>
         </div>
         <button id="boot-music" class="speaker muted" type="button" aria-label="Turn music on" aria-pressed="true">
-          <svg viewBox="0 0 64 64" width="34" height="34" aria-hidden="true">
+          <svg viewBox="0 0 64 64" aria-hidden="true">
             <path fill="#3b2258" d="M10 24h10l14-12v40L20 40H10z" />
             <path fill="none" stroke="#3b2258" stroke-width="5" stroke-linecap="round" d="M42 22c6 5 6 15 0 20M48 16c10 8 10 24 0 32" />
           </svg>
@@ -38,16 +48,6 @@
       </div>
     </div>
     </div>
-    <div id="prompt">
-      <button id="hear" type="button" aria-label="Turn voice off" aria-pressed="false">
-        <svg viewBox="0 0 64 64" aria-hidden="true">
-          <path fill="#3b2258" d="M10 24h10l14-12v40L20 40H10z" />
-          <path fill="none" stroke="#3b2258" stroke-width="5" stroke-linecap="round" d="M42 22c6 5 6 15 0 20M48 16c10 8 10 24 0 32" />
-        </svg>
-      </button>
-      <p id="caption"></p>
-    </div>
-    <div id="progress"></div>
     <div id="veil"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
