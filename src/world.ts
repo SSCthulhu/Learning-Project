@@ -42,7 +42,6 @@ let onGuide: (() => void) | null = null;
 let onBop: (() => void) | null = null;
 let onEmpty: (() => void) | null = null;
 let hoverTalk: ((text: string) => void) | null = null;
-let talking = false;
 let hoverTimer = 0;
 let lastHoverText: string | null = null;
 const extraLit = new Set<THREE.Object3D>();
@@ -191,10 +190,6 @@ export function setBopTap(fn: (() => void) | null): void {
 
 export function setEmptyTap(fn: (() => void) | null): void {
   onEmpty = fn;
-}
-
-export function setTalking(on: boolean): void {
-  talking = on;
 }
 
 export function clearGroup(group: THREE.Group): void {
@@ -411,16 +406,14 @@ export function start(): void {
       const who = root.userData.who as string | undefined;
       let y = home;
       if (who === 'bop') {
-        const hop = Math.sin(clock * 2.4);
-        y += Math.max(0, hop) * hop * 0.14;
-        root.rotation.z = Math.sin(clock * 1.4) * 0.035;
-        if (cheer > 0) y += Math.sin((1 - cheer) * Math.PI) * 0.62;
-        if (shake > 0) root.rotation.z = Math.sin(shake * 46) * 0.14 * shake;
+        const hop = Math.sin(clock * 1.1);
+        y += Math.max(0, hop) * hop * 0.02;
+        root.rotation.z = Math.sin(clock * 0.55) * 0.008;
+        if (cheer > 0) y += Math.sin((1 - cheer) * Math.PI) * 0.16;
+        if (shake > 0) root.rotation.z = Math.sin(shake * 46) * 0.04 * shake;
       } else {
-        y += Math.sin(clock * 1.5) * 0.045;
-        const talk = talking ? 1 + Math.sin(clock * 8) * 0.008 : 1;
-        root.scale.setScalar(talk);
-        root.rotation.z = Math.sin(clock * 0.7) * 0.02;
+        y += Math.sin(clock * 0.7) * 0.01;
+        root.rotation.z = Math.sin(clock * 0.4) * 0.004;
       }
       root.position.y = y;
     });

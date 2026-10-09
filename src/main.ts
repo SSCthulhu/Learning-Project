@@ -1,6 +1,6 @@
 import { findGame, hubZones, lobbySigns, QUESTS, type GameDef, type QuestDef } from './games';
 import * as THREE from 'three';
-import { bind, currentToken, openPlace, replay, say } from './play';
+import { bind, currentToken, openPlace, say, toggleQuiet } from './play';
 import { unlockAudio } from './speak';
 import { asset, bindInput, camera, preload, scene, start } from './world';
 
@@ -81,8 +81,9 @@ window.starlace = { goto, project };
 void bootUp();
 boot.addEventListener('pointerdown', begin);
 document.getElementById('hear')?.addEventListener('pointerdown', (event) => {
+  event.preventDefault();
   event.stopPropagation();
-  replay();
+  toggleQuiet();
 });
 
 declare global {

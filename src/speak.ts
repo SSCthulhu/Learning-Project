@@ -202,7 +202,7 @@ export function speakHover(line: string): void {
   });
 }
 
-export function speak(line: string, force = false, after?: () => void, rate = 0.9): void {
+export function speak(line: string, _force = false, after?: () => void, rate = 0.9): void {
   if (mainLive && line === liveLine) return;
   const synth = window.speechSynthesis;
   const token = ++speakToken;
@@ -217,7 +217,7 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     releaseSpoken();
     after?.();
   };
-  if (quiet && !force) {
+  if (quiet) {
     mainLive = false;
     releaseSpoken();
     return;
@@ -273,6 +273,7 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
 const voiceFiles = new Map<string, string>();
 let voiceReady: Promise<void> = Promise.resolve();
 let clip: HTMLAudioElement | null = null;
+let endClip: ((ok: boolean) => void) | null = null;
 
 function loadVoiceIndex(): void {
   const url = `${import.meta.env.BASE_URL}voice/index.json`;
@@ -297,13 +298,18 @@ function loadVoiceIndex(): void {
 }
 
 function stopClip(): void {
-  if (!clip) return;
-  clip.onended = null;
-  clip.onerror = null;
-  clip.pause();
-  clip.removeAttribute('src');
-  clip.load();
-  clip = null;
+  const end = endClip;
+  endClip = null;
+  if (clip) {
+    const el = clip;
+    clip = null;
+    el.onended = null;
+    el.onerror = null;
+    el.pause();
+    el.removeAttribute('src');
+    el.load();
+  }
+  end?.(false);
 }
 
 function recordingUrl(file: string): string {
@@ -321,9 +327,11 @@ function playRecording(line: string): Promise<boolean> {
     const done = (ok: boolean) => {
       if (settled) return;
       settled = true;
+      if (endClip === done) endClip = null;
       if (clip === el) clip = null;
       resolve(ok);
     };
+    endClip = done;
     el.onended = () => done(true);
     el.onerror = () => done(false);
     void el.play().catch(() => done(false));
@@ -413,6 +421,7 @@ function hiss(ctx: AudioContext, freq: number, q: number, dur: number, peak: num
 }
 
 export function saySound(letter: string, word = ''): void {
+  if (quiet) return;
   const sound = soundOf(letter);
   if (pickVoice()) {
     speak(word ? `${sound}, ${word}` : sound, false, undefined, 0.76);
@@ -422,6 +431,7 @@ export function saySound(letter: string, word = ''): void {
 }
 
 export function phoneme(kind: string): void {
+  if (quiet) return;
   if (pickVoice()) {
     speak(soundOf(kind), false, undefined, 0.7);
     return;

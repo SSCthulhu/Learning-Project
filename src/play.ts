@@ -9,7 +9,6 @@ import {
   setGuides,
   setBopTap,
   setEmptyTap,
-  setTalking,
   setHoverTalk,
   onWorldResize,
   stage,
@@ -102,7 +101,7 @@ export function say(text: string, opts?: { speech?: string; then?: () => void })
 }
 
 export function replay(): void {
-  if (!line) return;
+  if (!line || isQuiet()) return;
   markTalking(true);
   const after = tail;
   speak(line, true, () => {
@@ -112,6 +111,7 @@ export function replay(): void {
 }
 
 export function remind(text: string): void {
+  if (isQuiet()) return;
   if (!line) {
     say(text);
     return;
@@ -291,25 +291,38 @@ function plant(root: THREE.Object3D, spot: Spot): void {
 }
 
 function markTalking(on: boolean): void {
-  setTalking(on);
   caption.parentElement?.classList.toggle('talking', on);
 }
 
-function toggleQuiet(): void {
+function paintHear(): void {
+  const hear = document.getElementById('hear');
+  if (!hear) return;
+  hear.classList.toggle('muted', isQuiet());
+  hear.setAttribute('aria-pressed', isQuiet() ? 'true' : 'false');
+  hear.setAttribute('aria-label', isQuiet() ? 'Turn sound on' : 'Turn sound off');
+}
+
+export function toggleQuiet(): void {
   setQuiet(!isQuiet());
+  paintHear();
   const button = chrome.find((item) => item.root === quietMesh);
   if (button) button.hover = isQuiet() ? 'Sound' : 'Quiet';
-  if (!quietMesh) return;
-  const next = quietButton(isQuiet());
-  const oldMat = quietMesh.material as THREE.MeshBasicMaterial;
-  const newMat = next.material as THREE.MeshBasicMaterial;
-  oldMat.map?.dispose();
-  oldMat.map = newMat.map;
-  oldMat.needsUpdate = true;
-  newMat.map = null;
-  next.geometry.dispose();
-  newMat.dispose();
-  if (!isQuiet() && line) speak(line, false, tail);
+  if (isQuiet()) markTalking(false);
+  if (quietMesh) {
+    const next = quietButton(isQuiet());
+    const oldMat = quietMesh.material as THREE.MeshBasicMaterial;
+    const newMat = next.material as THREE.MeshBasicMaterial;
+    oldMat.map?.dispose();
+    oldMat.map = newMat.map;
+    oldMat.needsUpdate = true;
+    newMat.map = null;
+    next.geometry.dispose();
+    newMat.dispose();
+  }
+  if (!isQuiet() && line) {
+    markTalking(true);
+    speak(line, false, () => markTalking(false));
+  }
 }
 
 export function addActor(obj: THREE.Object3D): void {
