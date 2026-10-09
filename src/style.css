@@ -1,0 +1,122 @@
+@font-face {
+  font-family: Starlace;
+  src: url(/fonts/Andika-Bold.ttf) format('truetype');
+  font-weight: 700;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #f6e2b0;
+  font-family: Starlace, Inter, "Trebuchet MS", sans-serif;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+#view {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+#prompt {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  width: min(860px, calc(100vw - 232px));
+  max-width: calc(100vw - 232px);
+  pointer-events: none;
+}
+
+#prompt.show { display: flex; }
+
+#hear {
+  pointer-events: auto;
+  flex: none;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border: 4px solid #e7b34a;
+  border-radius: 50%;
+  background: #fff6e4;
+  box-shadow: 0 6px 0 rgba(59, 34, 88, 0.12);
+  cursor: pointer;
+}
+
+#hear:hover { background: #ffe7a8; }
+
+#caption {
+  margin: 0;
+  padding: 12px 22px;
+  border: 4px solid #e7b34a;
+  border-radius: 18px;
+  background: rgba(255, 246, 228, 0.96);
+  color: #3b2258;
+  font-size: 30px;
+  line-height: 1.25;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 8px 0 rgba(59, 34, 88, 0.12);
+}
+
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+}
+
+.boot-title {
+  position: absolute;
+  left: 50%;
+  bottom: 4.5%;
+  transform: translateX(-50%);
+  display: inline-block;
+  padding: 14px 36px;
+  border: 5px solid #e7b34a;
+  border-radius: 999px;
+  background: #fff6e4;
+  color: #3b2258;
+  font-size: 48px;
+  box-shadow: 0 8px 0 rgba(59, 34, 88, 0.15);
+}
+
+#boot.gone { display: none; }
+
+#progress {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  z-index: 3;
+  display: none;
+  flex-direction: row;
+  gap: 7px;
+  pointer-events: none;
+}
+
+#progress.on { display: flex; }
+
+#progress span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #3b2258;
+  background: #fff6e4;
+}
+
+#progress span.done { background: #6aaa3a; }
+
+#progress span.now { background: #e7b34a; }
