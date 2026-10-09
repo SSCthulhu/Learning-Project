@@ -2,6 +2,7 @@ let quiet = false;
 const said: string[] = [];
 let speakToken = 0;
 let mainLive = false;
+let liveLine = '';
 let audio: AudioContext | null = null;
 
 const ANCHOR: Record<string, string> = {
@@ -104,10 +105,18 @@ function speechParts(line: string): string[] {
 
 function keepSpeechAlive(): void {
   if (chromeKeepAlive) return;
+  window.addEventListener('pointerdown', () => {
+    const token = speakToken;
+    window.setTimeout(() => {
+      if (token !== speakToken) return;
+      const synth = window.speechSynthesis;
+      if (synth && (synth.speaking || synth.paused)) synth.resume();
+    }, 0);
+  });
   chromeKeepAlive = window.setInterval(() => {
     const synth = window.speechSynthesis;
-    if (synth?.speaking) synth.resume();
-  }, 4000);
+    if (synth && (synth.speaking || synth.paused)) synth.resume();
+  }, 500);
 }
 
 export function cancelSpeech(): void {
@@ -134,8 +143,10 @@ export function speakHover(line: string): void {
 }
 
 export function speak(line: string, force = false, after?: () => void, rate = 0.9): void {
+  if (mainLive && line === liveLine) return;
   const synth = window.speechSynthesis;
   const token = ++speakToken;
+  liveLine = line;
   window.speechSynthesis?.cancel();
   armSpeech();
   keepSpeechAlive();
@@ -186,7 +197,10 @@ export function speak(line: string, force = false, after?: () => void, rate = 0.
     };
     capId = window.setTimeout(advance, capMs);
     utter.onend = advance;
-    utter.onerror = advance;
+    utter.onerror = (event) => {
+      if (event.error === 'interrupted' || event.error === 'canceled') return;
+      advance();
+    };
     synth.speak(utter);
   };
   window.setTimeout(() => speakPart(0), 100);
