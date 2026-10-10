@@ -1,10 +1,11 @@
 {
-  "name": "agent",
+  "name": "starlace",
   "version": "1.0.0",
-  "description": "",
+  "description": "Starlace, a kindergarten game of letters, words, numbers, and shapes.",
   "main": "index.js",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 5173 --strictPort",
+    "build": "vite build",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],
